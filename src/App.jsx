@@ -46,7 +46,7 @@ export default function App() {
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [profilePhoto, setProfilePhoto] = useState("");
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [selectedThemes, setSelectedThemes] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedGoal, setSelectedGoal] = useState("");
@@ -93,7 +93,7 @@ const [streak, setStreak] = useState(0);
 
           setName(userData.name || "");
           setUsername(userData.username || "");
-          setProfilePhoto(userData.profilePhotoUrl || "");
+          setProfilePhotoUrl(userData.profilePhotoUrl || "");
           setSelectedThemes(userData.selectedThemes || []);
           setSelectedSkills(userData.selectedSkills || []);
           setSelectedGoal(userData.selectedGoal || "");
@@ -590,6 +590,9 @@ setSavedVideos={setSavedVideos}
 
           sharedVideos={sharedVideos}
           setSharedVideos={setSharedVideos}
+
+          profilePhotoUrl={profilePhotoUrl}
+          setProfilePhotoUrl={setProfilePhotoUrl}
           />
       )}
     </div>
@@ -887,13 +890,13 @@ function MainApp({
   myPosts,
   handleDeletePost,
   likedVideos,
-setLikedVideos,
-savedVideos,
-setSavedVideos,
-sharedVideos,
-setSharedVideos,
-profilePhoto,
-setProfilePhoto,
+  setLikedVideos,
+  savedVideos,
+  setSavedVideos,
+  sharedVideos,
+  setSharedVideos,
+  profilePhotoUrl,
+  setProfilePhotoUrl,
 }) {
   return (
     <section className="mainApp">
@@ -912,8 +915,8 @@ setProfilePhoto,
   setSharedVideos={setSharedVideos}
 
   friends={friends}
-  profilePhoto={profilePhoto}
-setProfilePhoto={setProfilePhoto}
+  profilePhotoUrl={profilePhotoUrl}
+  setProfilePhotoUrl={setProfilePhotoUrl}
 />
         )}
 
@@ -950,8 +953,8 @@ setProfilePhoto={setProfilePhoto}
             onSignOut={onSignOut}
             myPosts={myPosts}
             handleDeletePost={handleDeletePost}
-            profilePhoto={profilePhoto}
-            setProfilePhoto={setProfilePhoto}
+            profilePhotoUrl={profilePhotoUrl}
+            setProfilePhotoUrl={setProfilePhotoUrl}
           />
         )}
       </div>
@@ -1664,8 +1667,8 @@ function Profile({
   handleDeletePost,
   likedVideos,
   savedVideos,
-  profilePhoto,
-  setProfilePhoto,
+  profilePhotoUrl,
+  setProfilePhotoUrl,
 }) {
   const [selectedUpload, setSelectedUpload] = useState(null);
 
@@ -1775,7 +1778,7 @@ const [changingUsername, setChangingUsername] = useState(false);
       profilePhotoUrl: photoUrl,
     });
 
-    setProfilePhoto(photoUrl);
+    setProfilePhotoUrl(photoUrl);
   } catch (error) {
     alert(error.message);
   }
@@ -1841,8 +1844,8 @@ async function changeUsername() {
     <Page title="Profile">
       <div className="card profileCard">
         <label className="profileAvatar">
-  {profilePhoto ? (
-    <img src={profilePhoto} alt="Profile" />
+  {profilePhotoUrl ? (
+    <img src={profilePhotoUrl} alt="Profile" />
   ) : (
     <span>{username ? username.charAt(0).toUpperCase() : "H"}</span>
   )}
@@ -2143,7 +2146,7 @@ async function changeUsername() {
 
                   <button
                     className={
-                      likedPosts[selectedUpload.id]
+                      false
                         ? "socialAction activeSocialAction"
                         : "socialAction"
                     }
@@ -2170,7 +2173,7 @@ async function changeUsername() {
 
                   <button
                     className={
-                      savedPosts[selectedUpload.id]
+                      false
                         ? "socialAction activeSocialAction"
                         : "socialAction"
                     }
