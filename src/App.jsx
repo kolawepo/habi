@@ -60,6 +60,7 @@ export default function App() {
 
   const [posts, setPosts] = useState([]);
 const [friends, setFriends] = useState([]);
+const [friendRequests, setFriendRequests] = useState([]);
 const [likedVideos, setLikedVideos] = useState([]);
 const [savedVideos, setSavedVideos] = useState([]);
 const [streak, setStreak] = useState(0);
@@ -99,7 +100,7 @@ const [streak, setStreak] = useState(0);
           setSelectedGoal(userData.selectedGoal || "");
           setStreak(userData.streak || 0);
           setFriends(userData.friends || []);
-
+          setFriendRequests(userData.friendRequests || []);
           setScreen("main");
         } else {
           setScreen("splash");
@@ -295,16 +296,44 @@ if (lastPostDate !== today) {
       setScreen("goal");
     }
   }
-async function handleAddFriend(friendUid) {
+async function handleSendFriendRequest(friendUid) {
   if (!currentUser || friendUid === currentUser.uid) return;
 
-  const userRef = doc(db, "users", currentUser.uid);
+  const friendRef = doc(db, "users", friendUid);
 
-  await updateDoc(userRef, {
-    friends: arrayUnion(friendUid),
+  await updateDoc(friendRef, {
+    friendRequests: arrayUnion(currentUser.uid),
   });
 
-  setFriends((prev) => [...new Set([...prev, friendUid])]);
+  alert("Friend request sent!");
+}
+
+async function handleAcceptFriendRequest(requesterUid) {
+  if (!currentUser) return;
+
+  const currentUserRef = doc(db, "users", currentUser.uid);
+  const requesterRef = doc(db, "users", requesterUid);
+
+  await updateDoc(currentUserRef, {
+    friends: arrayUnion(requesterUid),
+    friendRequests: arrayRemove(requesterUid),
+  });
+
+  await updateDoc(requesterRef, {
+    friends: arrayUnion(currentUser.uid),
+  });
+
+  setFriends((prev) => [...new Set([...prev, requesterUid])]);
+}
+
+async function handleDeclineFriendRequest(requesterUid) {
+  if (!currentUser) return;
+
+  const currentUserRef = doc(db, "users", currentUser.uid);
+
+  await updateDoc(currentUserRef, {
+    friendRequests: arrayRemove(requesterUid),
+  });
 }
 
 async function handleRemoveFriend(friendUid) {
@@ -573,7 +602,10 @@ async function handleRemoveFriend(friendUid) {
           onSignOut={handleSignOut}
           friendPosts={friendFeedPosts}
           friends={friends}
-handleAddFriend={handleAddFriend}
+handleSendFriendRequest={handleSendFriendRequest}
+friendRequests={friendRequests}
+handleAcceptFriendRequest={handleAcceptFriendRequest}
+handleDeclineFriendRequest={handleDeclineFriendRequest}
 handleRemoveFriend={handleRemoveFriend}
 currentUser={currentUser}
           myPosts={myPosts}
@@ -735,6 +767,7 @@ if (!usernameSnapshot.empty) {
           streak: 0,
           lastPostDate: "",
           friends: [],
+          friendRequests: [],
 usernameLastChanged: null,
 previousUsernames: [],
 createdAt: new Date(),
@@ -884,7 +917,10 @@ function MainApp({
   onSignOut,
   friendPosts,
   friends,
-  handleAddFriend,
+  handleSendFriendRequest,
+  friendRequests,
+  handleAcceptFriendRequest,
+  handleDeclineFriendRequest,
   handleRemoveFriend,
   currentUser,
   myPosts,
@@ -924,7 +960,10 @@ function MainApp({
   <Friends
     friendPosts={friendPosts}
     friends={friends}
-    handleAddFriend={handleAddFriend}
+    handleSendFriendRequest={handleSendFriendRequest}
+friendRequests={friendRequests}
+handleAcceptFriendRequest={handleAcceptFriendRequest}
+handleDeclineFriendRequest={handleDeclineFriendRequest}
     handleRemoveFriend={handleRemoveFriend}
     currentUser={currentUser}
   />
@@ -1288,7 +1327,10 @@ const saved = savedVideos.some(
 function Friends({
   friendPosts,
   friends,
-  handleAddFriend,
+  handleSendFriendRequest,
+  friendRequests,
+  handleAcceptFriendRequest,
+  handleDeclineFriendRequest,
   handleRemoveFriend,
   currentUser,
 }) {
@@ -1369,7 +1411,7 @@ function Friends({
                 <button
                   className="primaryButton"
                   onClick={() =>
-                    handleAddFriend(searchResult.uid)
+                    handleSendFriendRequest(searchResult.uid)
                   }
                 >
                   Add Friend
@@ -1379,6 +1421,41 @@ function Friends({
           </div>
         )}
       </div>
+
+{friendRequests.length > 0 && (
+  <div className="friendRequestsSection">
+    <h3>Friend Requests</h3>
+
+    {friendRequests.map((requestUid) => (
+      <div
+        key={requestUid}
+        className="friendRequestCard"
+      >
+        <p>{requestUid}</p>
+
+        <div className="friendRequestButtons">
+          <button
+            className="primaryButton"
+            onClick={() =>
+              handleAcceptFriendRequest(requestUid)
+            }
+          >
+            Accept
+          </button>
+
+          <button
+            className="removeFriendButton"
+            onClick={() =>
+              handleDeclineFriendRequest(requestUid)
+            }
+          >
+            Decline
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
 
       {friendPosts.length === 0 && (
         <div className="emptyVideoState">
