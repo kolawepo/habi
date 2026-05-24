@@ -1,0 +1,2025 @@
+/* =========================
+   GLOBAL
+========================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Inter, sans-serif;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background: #f6f1ee;
+  color: #1f1f1f;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+textarea {
+  outline: none;
+  border: none;
+}
+
+/* =========================
+   APP
+========================= */
+
+.appShell {
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  background: #f6f1ee;
+}
+
+.screen {
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  padding: 14px 18px;
+  overflow-x: hidden;
+}
+
+/* =========================
+   SPLASH
+========================= */
+
+.splash {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px 18px 10px;
+}
+
+.brandBlock {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.brandBlock h1 {
+  font-size: 64px;
+  line-height: 0.9;
+  font-weight: 900;
+  letter-spacing: -3px;
+  color: #e95443;
+}
+
+.brandBlock p {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: #8e8e8e;
+  font-weight: 800;
+}
+
+.splashHero {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-top: -130px;
+  margin-bottom: -105px;
+  justify-content: flex-start;
+padding-left: 8px;
+}
+
+.splashBibi {
+  width: 450px;
+  object-fit: contain;
+  z-index: 3;
+  flex-shrink: 0;
+  animation: floatBibi 3s ease-in-out infinite;
+  transform-origin: center;
+  margin-left: -110px;
+}
+
+@keyframes floatBibi {
+  0% {
+    transform: translateY(0px) rotate(-2deg);
+  }
+
+  50% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+
+  100% {
+    transform: translateY(0px) rotate(-2deg);
+  }
+}
+
+.speechBubble {
+  position: relative;
+  width: 205px;
+  padding: 17px 17px;
+  margin-left: -130px;
+  margin-top: -280px;
+  background: linear-gradient(180deg, #fbfffff2, #ffffff);
+  border-radius: 34px 34px 34px 16px;
+  border: 2px solid rgb(234, 200, 6);
+  box-shadow: 0 20px 44px rgba(243, 235, 12, 0.14);
+  text-align: left;
+  z-index: 2;
+}
+
+.bubbleTail {
+  position: absolute;
+  left: -10px;
+  top: 52%;
+  width: 22px;
+  height: 22px;
+  background: #fffaf8;
+  transform: translateY(-50%) rotate(45deg);
+  border-left: 2px solid rgba(255, 153, 80, 0.2);
+  border-bottom: 2px solid rgba(255, 153, 80, 0.2);
+  border-radius: 6px;
+}
+
+.speechBubble h2 {
+  font-size: 27px;
+  line-height: 1;
+  margin-bottom: 8px;
+  color: #1f1f1f;
+  letter-spacing: -1px;
+}
+
+.speechBubble p {
+  font-size: 13px;
+  line-height: 1.2;
+  color: #666;
+  font-weight: 650;
+}
+
+.splashActions {
+  flex-shrink: 0;
+  margin-top: -32px;
+  padding-bottom: 0;
+}
+
+.splashHero {
+  pointer-events: none;
+}
+
+.splashActions {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.splashActions .primaryButton,
+.splashActions .loginLink {
+  position: relative;
+  z-index: 21;
+  pointer-events: auto;
+}
+
+.primaryButton {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 15px;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 14px 30px rgba(255, 95, 135, 0.18);
+}
+
+.primaryButton:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.loginLink {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #777;
+  font-weight: 800;
+  font-size: 13px;
+  margin-top: 6px;
+  padding: 0;
+}
+
+.loginLink span {
+  color: #e95443;
+}
+
+.textButton {
+  background: transparent;
+  border: none;
+  color: #e95443;
+  font-weight: 700;
+  margin-top: 12px;
+}
+
+/* =========================
+   TOP BAR
+========================= */
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topBar button {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 28px;
+}
+
+.topBar span {
+  font-weight: 800;
+  color: #444;
+}
+
+.topBar {
+  position: relative;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.topBar button {
+  position: relative;
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+.mascotWrap,
+.onboardingBibi {
+  pointer-events: none;
+}
+
+/* =========================
+   ONBOARDING
+========================= */
+
+.mascotWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: -180px;
+}
+
+.onboardingBibi {
+  width: 400px;
+  max-width: 100vw;
+}
+
+.questionCard {
+  margin-top: -200px;
+  background: white;
+  border-radius: 36px;
+  padding: 20px;
+}
+
+.questionCard h1 {
+  font-size: clamp(42px, 10vw, 52px);
+  line-height: 1;
+  margin-bottom: 30px;
+  color: #1f1f1f;
+}
+
+.bottomAction {
+  margin-top: 24px;
+}
+
+/* =========================
+   THEMES
+========================= */
+
+.themeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.themeCard {
+  border: none;
+  background: #fff7f4;
+  border-radius: 28px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1f1f1f;
+}
+
+.themeCard span {
+  font-size: 34px;
+}
+
+.themeCard.isSelected {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+.optionList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.option {
+  border: none;
+  background: #fff7f4;
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1f1f1f;
+}
+
+.option.isSelected {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+.skillGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.themeHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.themeHeader h3 {
+  font-size: 26px;
+  color: #1f1f1f;
+}
+
+.sectionTitle {
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: #555;
+  font-size: 18px;
+  text-align: center;
+}
+
+.skillPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+}
+
+.skillPill {
+  border: none;
+  background: #fff7f4;
+  padding: 18px 22px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #1f1f1f;
+  min-width: 180px;
+}
+
+.skillPill.isSelected {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+/* =========================
+   AUTH
+========================= */
+
+.authScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+  position: relative;
+}
+
+.authBackButton {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: white;
+  color: #1f1f1f;
+  font-size: 28px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.authCard {
+  background: white;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 36px;
+  padding: 40px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.authCard {
+  position: relative;
+  z-index: 1;
+}
+
+.authCard h1 {
+  font-size: clamp(46px, 11vw, 72px);
+  line-height: 0.9;
+  text-align: center;
+  color: #1f1f1f;
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+.authCard input {
+  width: 100%;
+  background: #f6f1ee;
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 14px;
+  font-size: 16px;
+  color: #111;
+}
+
+.authCard input::placeholder {
+  color: #999;
+}
+
+.authTabs {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.authTabs button {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 14px;
+  font-weight: 700;
+  background: #f3f3f3;
+}
+
+.authTabs .active {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+.authMessage {
+  color: #e95443;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+/* =========================
+   MAIN APP
+========================= */
+
+.mainApp {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: 110px;
+  overflow-x: hidden;
+}
+
+.mainContent {
+  width: 100%;
+  max-width: 100%;
+  padding: 24px;
+  overflow-x: hidden;
+}
+
+.page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.pageTitle {
+  font-size: clamp(56px, 14vw, 74px);
+  line-height: 0.95;
+  color: #e95443;
+  font-weight: 900;
+  margin-bottom: 30px;
+}
+
+/* =========================
+   SEARCH
+========================= */
+
+.searchWrapper {
+  background: white;
+  border-radius: 30px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.searchWrapper span {
+  font-size: 28px;
+}
+
+.searchWrapper input {
+  flex: 1;
+  font-size: 20px;
+  background: transparent;
+  color: #111;
+  min-width: 0;
+}
+
+.searchWrapper input::placeholder {
+  color: #999;
+}
+
+/* =========================
+   SKILL TABS
+========================= */
+
+.skillTabs {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  margin-bottom: 26px;
+  padding-bottom: 4px;
+}
+
+.skillTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.skillTab {
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 800;
+  border: 3px solid #ead9d0;
+  background: transparent;
+  color: #e95443;
+  white-space: nowrap;
+}
+
+.activeSkillTab {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  border: none;
+}
+
+.addSkillTab {
+  background: white;
+}
+
+.removableSkillTab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skillTabInner {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  padding: 0;
+}
+
+.removeSkillButton {
+  border: none;
+  background: white;
+  color: #111;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.activeSkillTab .removeSkillButton {
+  background: white;
+  color: #e95443;
+}
+
+/* =========================
+   VIDEO FEED
+========================= */
+
+.tiktokVideoFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.tiktokVideoCard {
+  position: relative;
+  border-radius: 36px;
+  overflow: hidden;
+  background: black;
+  min-height: 620px;
+}
+
+.fakeTikTokPlayer {
+  min-height: 620px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.fakePlayerOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.85),
+    rgba(0, 0, 0, 0.15)
+  );
+}
+
+.bigPlayButton {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 34px;
+  backdrop-filter: blur(8px);
+}
+
+.tiktokVideoInfo {
+  position: absolute;
+  bottom: 26px;
+  left: 26px;
+  right: 120px;
+  color: white;
+}
+
+.tiktokVideoInfo small {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tiktokVideoInfo h2 {
+  margin-top: 10px;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.tiktokVideoInfo p {
+  margin-top: 10px;
+  color: #ddd;
+}
+
+.tiktokVideoActions {
+  position: absolute;
+  right: 18px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tiktokVideoActions button {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 26px;
+}
+
+.activeVideoAction {
+  background: linear-gradient(90deg, #ff9950, #ff5f87) !important;
+  color: white;
+}
+
+.youtubeWrapper {
+  width: 100%;
+  height: 620px;
+}
+
+.tiktokVideoFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.emptyVideoState {
+  background: white;
+  padding: 40px;
+  border-radius: 30px;
+  text-align: center;
+  color: #555;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* =========================
+   FRIENDS
+========================= */
+
+.videoFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.videoCard {
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.friendPostCard {
+  position: relative;
+  min-height: 520px;
+  background: #111;
+}
+
+.friendPostImage {
+  width: 100%;
+  height: 520px;
+  object-fit: cover;
+  display: block;
+}
+
+.friendPostOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78),
+    rgba(0, 0, 0, 0.12)
+  );
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 24px;
+}
+
+.friendPostText {
+  color: white;
+  max-width: 72%;
+}
+
+.friendTopRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.friendAvatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: white;
+  color: #e95443;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.friendTopRow h2 {
+  font-size: 30px;
+  margin: 0;
+}
+
+.friendTopRow p {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.friendPostText small {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 15px;
+  opacity: 0.9;
+}
+
+.friendPostText > p {
+  font-size: 19px;
+  margin-bottom: 8px;
+}
+
+.friendCaption {
+  font-size: 17px !important;
+  opacity: 0.9;
+}
+
+.videoSideActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.videoSideActions button {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 22px;
+}
+
+.selectedAction {
+  background: linear-gradient(90deg, #ff9950, #ff5f87) !important;
+  color: white;
+}
+
+.friendCommentBox {
+  margin-top: 12px;
+}
+
+.friendCommentBox input {
+  width: 100%;
+  border-radius: 999px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #111;
+  font-size: 14px;
+}
+
+/* =========================
+   UPLOAD
+========================= */
+
+.uploadBox {
+  background: white;
+  border-radius: 36px;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.uploadBox input {
+  display: none;
+}
+
+.uploadBox div {
+  text-align: center;
+}
+
+.uploadBox span {
+  font-size: 60px;
+  color: #e95443;
+}
+
+.uploadBox p {
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+.uploadBox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.uploadBox video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: black;
+  display: block;
+}
+
+textarea {
+  width: 100%;
+  min-height: 140px;
+  border-radius: 30px;
+  background: white;
+  padding: 22px;
+  font-size: 18px;
+  margin-bottom: 20px;
+  resize: none;
+  color: #1f1f1f;
+}
+
+textarea::placeholder {
+  color: #999;
+}
+
+/* =========================
+   STREAKS
+========================= */
+
+.streakCard {
+  background: linear-gradient(180deg, #ff9950, #ff5f87);
+  border-radius: 36px;
+  padding: 32px 24px;
+  color: white;
+  text-align: center;
+}
+
+.streakCard h2 {
+  font-size: 34px;
+}
+
+.streakCard h1 {
+  font-size: 74px;
+  line-height: 0.9;
+}
+
+.streakCard p {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.weekRow {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.weekRow span {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.weekRow .done {
+  background: white;
+  color: #ff5f87;
+}
+
+/* =========================
+   ACHIEVEMENTS
+========================= */
+
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 22px;
+  margin-bottom: 150px;
+}
+
+.badgeCard {
+  background: white;
+  border-radius: 24px;
+  padding: 18px 8px;
+  text-align: center;
+  min-height: 125px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.badgeCard span {
+  display: block;
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+
+.badgeCard h3 {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1f1f1f;
+  line-height: 1.15;
+}
+
+.badgeCard small {
+  font-size: 11px;
+  color: #999;
+  margin-top: 5px;
+  font-weight: 800;
+}
+
+.lockedBadge {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
+.lockedBadge::after {
+  content: "🔒";
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  font-size: 14px;
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+.profileCard {
+  background: white;
+  border-radius: 36px;
+  padding: 30px;
+  text-align: center;
+}
+
+.profileAvatar {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  cursor: pointer;
+}
+
+.profileAvatar span {
+  color: white;
+  font-size: 52px;
+  font-weight: 900;
+}
+
+.profileAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profileUsername {
+  font-size: 22px;
+  color: #444;
+  margin-top: 18px;
+  font-weight: 700;
+}
+
+.profileSkills {
+  color: #1f1f1f;
+  font-size: 18px;
+  margin-top: 14px;
+}
+
+.profileStats {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 26px;
+}
+
+.profileStats div {
+  display: flex;
+  flex-direction: column;
+}
+
+.profileStats b {
+  font-size: 24px;
+}
+
+.profileStats span {
+  color: #888;
+}
+
+.uploadsCard {
+  margin-top: 24px;
+  background: white;
+  border-radius: 36px;
+  padding: 24px;
+  margin-bottom: 140px;
+}
+
+.uploadsTitle {
+  color: #222;
+  font-size: 34px;
+  font-weight: 900;
+  margin-bottom: 22px;
+}
+
+.uploadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.uploadItem {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+  overflow: hidden;
+  border: none;
+  background: #111;
+  display: block;
+  padding: 0;
+}
+
+.uploadItem img,
+.uploadItem video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.uploadModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.uploadModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.86);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  overflow: hidden;
+}
+
+/* =========================
+   BOTTOM NAV
+========================= */
+
+.bottomNav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 96px;
+  background: white;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #eee;
+  z-index: 999;
+}
+
+.bottomNav button {
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #999;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.bottomNav button.active {
+  color: #e95443;
+}
+
+.plusButton {
+  width: 92px;
+  height: 92px;
+  border-radius: 50% !important;
+  background: linear-gradient(90deg, #ff9950, #ff5f87) !important;
+  color: white !important;
+  font-size: 54px !important;
+  margin-top: -34px;
+}
+.uploadItemCard {
+  width: 100%;
+}
+
+.deleteUploadButton {
+  width: 100%;
+  margin-top: 10px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px;
+  background: #fff0ef;
+  color: #e95443;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.deleteUploadButton:active {
+  transform: scale(0.98);
+}
+
+/* =========================
+   SOCIAL VIEWER
+========================= */
+
+.socialViewer {
+  width: 100%;
+  max-width: 520px;
+  height: 78svh;
+  max-height: 78svh;
+  background: #000;
+  border-radius: 34px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.socialViewerExpanded {
+  height: 88svh;
+  max-height: 88svh;
+}
+
+.socialHeader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent);
+}
+
+.backViewerButton {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+  font-size: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.socialHeaderUser {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+}
+
+.socialHeaderUser h3 {
+  font-size: 16px;
+}
+
+.socialHeaderUser p {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.socialMediaWrapper {
+  height: 58%;
+  min-height: 330px;
+  background: black;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.expandedMedia {
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+.socialFullscreenMedia {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: black;
+  display: block;
+}
+
+.socialBottomPanel {
+  background: white;
+  border-radius: 28px 28px 0 0;
+  padding: 16px;
+  height: 42%;
+  overflow-y: auto;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.hiddenBottomPanel {
+  height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0;
+}
+
+.socialActionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.leftSocialActions,
+.rightSocialActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.socialAction {
+  border: none;
+  background: #f3f3f3;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 20px;
+}
+
+.closePanelAction {
+  font-size: 22px;
+  font-weight: 900;
+  color: #444;
+}
+
+.activeSocialAction {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+.socialCaptionBlock {
+  margin-top: 14px;
+}
+
+.socialCaptionBlock p {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #111;
+}
+
+.socialCaptionBlock small {
+  display: block;
+  margin-top: 8px;
+  color: #777;
+}
+
+.commentsWrapper {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.commentBubble {
+  background: #f7f7f7;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.commentTop,
+.replyTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.commentTop strong,
+.replyTop strong {
+  color: #111;
+}
+
+.commentBubble p {
+  color: #222;
+  line-height: 1.4;
+}
+
+.replyButton {
+  border: none;
+  background: transparent;
+  color: #ff5f87;
+  font-weight: 700;
+  margin-top: 8px;
+  padding: 0;
+}
+
+.replyBubble {
+  margin-left: 28px;
+  background: #fff0f4;
+  border-radius: 18px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.replyBubble strong {
+  color: #ff5f87;
+}
+
+.replyBubble p {
+  margin-top: 4px;
+  color: #222;
+}
+
+.miniDelete {
+  border: none;
+  background: transparent;
+  color: #e95443;
+  font-weight: 900;
+  font-size: 16px;
+  padding: 0;
+}
+
+.commentInputBar {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+.commentInputBar input {
+  flex: 1;
+  background: #f3f3f3;
+  border-radius: 999px;
+  padding: 13px 16px;
+  font-size: 15px;
+  color: #111;
+  min-width: 0;
+}
+
+.commentInputBar input::placeholder {
+  color: #999;
+}
+
+.commentInputBar button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 18px;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-weight: 800;
+}
+
+.hiddenBottomPanel {
+  display: none;
+}
+
+.showPanelButton {
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: white;
+  color: #e95443;
+  font-size: 28px;
+  font-weight: 900;
+  z-index: 50;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+.replyInputBar {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 14px 28px;
+}
+
+.replyInputBar input {
+  flex: 1;
+  background: #f3f3f3;
+  border-radius: 999px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #111;
+  min-width: 0;
+}
+
+.replyInputBar button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-weight: 800;
+}
+
+.socialBottomPanel::-webkit-scrollbar {
+  display: none;
+}
+
+/* =========================
+   BOTTOM PANEL
+========================= */
+
+.socialBottomPanel {
+  background: white;
+  border-radius: 30px 30px 0 0;
+  padding: 18px;
+  height: 38%;
+  overflow-y: auto;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.socialBottomPanel::-webkit-scrollbar {
+  display: none;
+}
+
+.hidePanelButton {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #f4f4f4;
+  color: #444;
+  font-size: 18px;
+  font-weight: 900;
+  z-index: 5;
+}
+
+/* =========================
+   ACTION BUTTONS
+========================= */
+
+.socialActionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-right: 40px;
+}
+
+.leftSocialActions {
+  display: flex;
+  gap: 14px;
+}
+
+.socialAction {
+  border: none;
+  background: #f3f3f3;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 22px;
+  transition: 0.2s;
+}
+
+.socialAction:active {
+  transform: scale(0.95);
+}
+
+.activeSocialAction {
+  background: linear-gradient(
+    90deg,
+    #ff9950,
+    #ff5f87
+  );
+  color: white;
+}
+
+/* =========================
+   CAPTION
+========================= */
+
+.socialCaptionBlock {
+  margin-top: 18px;
+}
+
+.socialCaptionBlock p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #111;
+}
+
+.socialCaptionBlock strong {
+  font-weight: 900;
+}
+
+.socialCaptionBlock small {
+  display: block;
+  margin-top: 8px;
+  color: #888;
+  font-size: 13px;
+}
+
+/* =========================
+   COMMENTS
+========================= */
+
+.commentsWrapper {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.commentBubble {
+  background: #f7f7f7;
+  border-radius: 20px;
+  padding: 15px;
+}
+
+.commentTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.commentTop strong {
+  color: #111;
+  font-size: 15px;
+}
+
+.commentTop span {
+  color: #999;
+  font-size: 12px;
+}
+
+.commentBubble p {
+  color: #222;
+  line-height: 1.45;
+  font-size: 15px;
+}
+
+/* =========================
+   COMMENT ACTIONS
+========================= */
+
+.commentActions {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.replyButton {
+  border: none;
+  background: transparent;
+  color: #ff5f87;
+  font-weight: 800;
+  padding: 0;
+  font-size: 14px;
+}
+
+.deleteCommentButton {
+  border: none;
+  background: transparent;
+  color: #e95443;
+  font-weight: 800;
+  padding: 0;
+  font-size: 14px;
+}
+
+/* =========================
+   REPLIES
+========================= */
+
+.replyBubble {
+  margin-left: 28px;
+  margin-top: 10px;
+  background: #fff0f4;
+  border-radius: 18px;
+  padding: 13px;
+}
+
+.replyBubble strong {
+  color: #ff5f87;
+  font-size: 14px;
+}
+
+.replyBubble p {
+  margin-top: 6px;
+  font-size: 15px;
+  color: #222;
+}
+
+/* =========================
+   COMMENT INPUT
+========================= */
+
+.commentInputBar {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+.commentInputBar input {
+  flex: 1;
+  background: #f3f3f3;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-size: 15px;
+  color: #111;
+  min-width: 0;
+}
+
+.commentInputBar input::placeholder {
+  color: #999;
+}
+
+.commentInputBar button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 22px;
+  background: linear-gradient(
+    90deg,
+    #ff9950,
+    #ff5f87
+  );
+  color: white;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* =========================
+   REPLY INPUT
+========================= */
+
+.replyInputBar {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 16px 28px;
+}
+
+.replyInputBar input {
+  flex: 1;
+  background: #f3f3f3;
+  border-radius: 999px;
+  padding: 13px 15px;
+  font-size: 14px;
+  color: #111;
+  min-width: 0;
+}
+
+.replyInputBar button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: linear-gradient(
+    90deg,
+    #ff9950,
+    #ff5f87
+  );
+  color: white;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.cancelReplyButton {
+  background: #f2f2f2 !important;
+  color: #777 !important;
+}
+
+/* =========================
+   PROFILE FILTER BUTTONS
+========================= */
+
+.profileSections {
+  display: flex;
+  gap: 10px;
+  margin: 22px 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.profileSections::-webkit-scrollbar {
+  display: none;
+}
+
+.profileSections button {
+  border: none;
+  border-radius: 999px;
+  padding: 13px 18px;
+  background: white;
+  color: #777;
+  font-weight: 800;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.profileSections .activeProfileSection {
+  background: linear-gradient(
+    90deg,
+    #ff9950,
+    #ff5f87
+  );
+  color: white;
+}
+
+.unlockedBadge {
+  border: 3px solid #ffb25f;
+  box-shadow: 0 14px 30px rgba(255, 95, 135, 0.16);
+  animation: badgePop 0.5s ease;
+}
+
+.unlockBibiWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 14px;
+  animation: badgePop 0.45s ease;
+}
+
+.unlockBibiWrap img {
+  width: 120px;
+  height: auto;
+  object-fit: contain;
+}
+
+.unlockBibiWrap p {
+  margin-top: -8px;
+  color: #e95443;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0.85);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes confettiDrop {
+  0% {
+    transform: translateY(-8px);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+.lockedBadge small {
+  max-width: 110px;
+  line-height: 1.2;
+}
+
+.friendSearchCard {
+  background: white;
+  border-radius: 34px;
+  padding: 22px;
+  margin-bottom: 22px;
+}
+
+.friendSearchInput {
+  width: 100%;
+  background: #f6f1ee;
+  color: #111;
+  border-radius: 999px;
+  padding: 18px 20px;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.friendSearchInput::placeholder {
+  color: #999;
+}
+
+.friendResultCard {
+  margin-top: 18px;
+  background: #fff7f4;
+  border-radius: 28px;
+  padding: 18px;
+}
+
+.removeFriendButton {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 14px;
+  background: #fff0ef;
+  color: #e95443;
+  font-weight: 900;
+}
+
+.usernameChangeBox {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.usernameChangeBox input {
+  width: 100%;
+  background: #f6f1ee;
+  color: #111;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-size: 15px;
+}
+
+.usernameChangeBox input::placeholder {
+  color: #999;
+}
+
+.usernameChangeBox button {
+  border: none;
+  border-radius: 999px;
+  padding: 14px;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-weight: 900;
+}
+.settingsButton {
+  margin-top: 12px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: #f6f1ee;
+  color: #e95443;
+  font-weight: 900;
+}
+
+.settingsModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.settingsSheet {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 34px 34px 0 0;
+  padding: 24px;
+}
+
+.settingsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.settingsHeader h2 {
+  font-size: 30px;
+  color: #1f1f1f;
+}
+
+.settingsHeader button {
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f6f1ee;
+  font-size: 20px;
+}
+
+.settingsSignOutButton {
+  width: 100%;
+  margin-top: 18px;
+  border: none;
+  border-radius: 999px;
+  padding: 15px;
+  background: #fff0ef;
+  color: #e95443;
+  font-weight: 900;
+}
