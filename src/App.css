@@ -2023,3 +2023,662 @@ textarea::placeholder {
   color: #e95443;
   font-weight: 900;
 }
+.friendResultCard .friendTopRow h2,
+.friendResultCard .friendTopRow p,
+.friendRequestsSection .friendTopRow h2,
+.friendRequestsSection .friendTopRow p {
+  color: #1f1f1f;
+  opacity: 1;
+}
+
+.friendAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clickableFriendRow {
+  cursor: pointer;
+}
+
+.friendRequestsSection,
+.friendListSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.friendRequestsSection h3,
+.friendListSection h3 {
+  color: #1f1f1f;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.friendRequestCard {
+  background: white;
+  border-radius: 28px;
+  padding: 18px;
+}
+
+.friendRequestButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.friendRequestButtons button {
+  flex: 1;
+}
+
+.disabledFriendButton {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 14px;
+  background: #eee;
+  color: #777;
+  font-weight: 900;
+}
+
+.friendListGrid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.friendListGrid::-webkit-scrollbar {
+  display: none;
+}
+
+.friendProfileButton {
+  min-width: 110px;
+  border: none;
+  background: white;
+  border-radius: 24px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #1f1f1f;
+  font-weight: 800;
+}
+
+.friendProfileButton .friendAvatar {
+  margin: 0;
+}
+
+.friendProfileModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 99999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.friendProfileSheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: 88svh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 34px 34px 0 0;
+  padding: 24px;
+  position: relative;
+}
+
+.closeFriendProfile {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: #f6f1ee;
+  color: #e95443;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.largeFriendAvatar {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-size: 48px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px auto 16px;
+}
+
+.largeFriendAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.friendProfileSheet h2 {
+  text-align: center;
+  font-size: 28px;
+  color: #1f1f1f;
+}
+
+.friendProfileSheet > p {
+  text-align: center;
+  color: #777;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.friendProfileStats {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  margin: 22px 0;
+}
+
+.friendProfileStats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.friendProfileStats b {
+  font-size: 24px;
+  color: #1f1f1f;
+}
+
+.friendProfileStats span {
+  color: #888;
+  font-weight: 700;
+}
+
+.friendProfileSkills {
+  background: #fff7f4;
+  border-radius: 22px;
+  padding: 14px;
+  color: #1f1f1f !important;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.friendUploadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+  margin-top: 20px;
+}
+
+.friendMiniUpload {
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #111;
+}
+
+.friendMiniUpload img,
+.friendMiniUpload video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.friendResultCard .friendTopRow h2,
+.friendResultCard .friendTopRow p,
+.friendRequestsSection .friendTopRow h2,
+.friendRequestsSection .friendTopRow p {
+  color: #1f1f1f;
+  opacity: 1;
+}
+
+.friendAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clickableFriendRow {
+  cursor: pointer;
+}
+
+.friendRequestsSection,
+.friendListSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.friendRequestsSection h3,
+.friendListSection h3 {
+  color: #1f1f1f;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.friendRequestCard {
+  background: white;
+  border-radius: 28px;
+  padding: 18px;
+}
+
+.friendRequestButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.friendRequestButtons button {
+  flex: 1;
+}
+
+.disabledFriendButton {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 14px;
+  background: #eee;
+  color: #777;
+  font-weight: 900;
+}
+
+.friendListGrid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.friendListGrid::-webkit-scrollbar {
+  display: none;
+}
+
+.friendProfileButton {
+  min-width: 110px;
+  border: none;
+  background: white;
+  border-radius: 24px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #1f1f1f;
+  font-weight: 800;
+}
+
+.friendProfileButton .friendAvatar {
+  margin: 0;
+}
+
+.friendProfileModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 99999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.friendProfileSheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: 88svh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 34px 34px 0 0;
+  padding: 24px;
+  position: relative;
+}
+
+.closeFriendProfile {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: #f6f1ee;
+  color: #e95443;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.largeFriendAvatar {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-size: 48px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px auto 16px;
+}
+
+.largeFriendAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.friendProfileSheet h2 {
+  text-align: center;
+  font-size: 28px;
+  color: #1f1f1f;
+}
+
+.friendProfileSheet > p {
+  text-align: center;
+  color: #777;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.friendProfileStats {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  margin: 22px 0;
+}
+
+.friendProfileStats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.friendProfileStats b {
+  font-size: 24px;
+  color: #1f1f1f;
+}
+
+.friendProfileStats span {
+  color: #888;
+  font-weight: 700;
+}
+
+.friendProfileSkills {
+  background: #fff7f4;
+  border-radius: 22px;
+  padding: 14px;
+  color: #1f1f1f !important;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.friendUploadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+  margin-top: 20px;
+}
+
+.friendMiniUpload {
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #111;
+}
+
+.friendMiniUpload img,
+.friendMiniUpload video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.friendResultCard h2,
+.friendResultCard p {
+  color: #222 !important;
+  opacity: 1 !important;
+}
+
+.friendResultCard {
+  background: #ffffff !important;
+}
+
+.friendTopRow div h2 {
+  color: #222 !important;
+  opacity: 1 !important;
+}
+.friendUserInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.friendName {
+  color: #222 !important;
+  opacity: 1 !important;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.friendUsername {
+  color: #666 !important;
+  opacity: 1 !important;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.friendResultCard,
+.friendRequestCard,
+.friendProfileButton {
+  background: #ffffff !important;
+}
+
+.friendTopRow {
+  align-items: center;
+}
+
+.friendAvatar {
+  flex-shrink: 0;
+}
+
+.friendSearchInput {
+  color: #111 !important;
+  font-weight: 600;
+}
+
+.friendSearchInput::placeholder {
+  color: #888;
+}
+
+.clickableFriendRow {
+  transition: 0.2s ease;
+}
+
+.clickableFriendRow:active {
+  transform: scale(0.98);
+}
+
+.friendResultCard h2,
+.friendResultCard p,
+.friendRequestCard h2,
+.friendRequestCard p {
+  opacity: 1 !important;
+}
+
+.friendResultCard h2,
+.friendRequestCard h2 {
+  color: #222 !important;
+}
+
+.friendResultCard p,
+.friendRequestCard p {
+  color: #666 !important;
+}
+
+/* =========================
+   FRIEND SEARCH FINAL FIX
+========================= */
+
+.friendResultCard {
+  background: #ffffff !important;
+  border-radius: 28px;
+  padding: 18px;
+  margin-top: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.friendUserInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.friendName {
+  color: #1f1f1f !important;
+  opacity: 1 !important;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.friendUsername {
+  color: #666 !important;
+  opacity: 1 !important;
+  font-size: 15px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.friendResultCard h2,
+.friendResultCard p,
+.friendRequestCard h2,
+.friendRequestCard p,
+.friendProfileButton span {
+  color: #1f1f1f !important;
+  opacity: 1 !important;
+}
+
+.friendAvatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-size: 24px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.friendAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clickableFriendRow {
+  transition: 0.2s ease;
+}
+
+.clickableFriendRow:active {
+  transform: scale(0.98);
+}
+
+.friendSearchInput {
+  color: #111 !important;
+  font-weight: 700;
+}
+
+.friendSearchInput::placeholder {
+  color: #888;
+}
+
+.friendRequestCard,
+.friendProfileButton {
+  background: white !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+}
+.friendName,
+.friendResultCard .friendName,
+.friendRequestCard .friendName {
+  color: #1f1f1f !important;
+  opacity: 1 !important;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.friendUsername,
+.friendResultCard .friendUsername,
+.friendRequestCard .friendUsername {
+  color: #555 !important;
+  opacity: 1 !important;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.requestsTitle {
+  font-size: 28px;
+  font-weight: 900;
+  color: #1f1f1f;
+  margin-bottom: 14px;
+}
+
+.requestButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.acceptButton,
+.declineButton {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 14px;
+  font-weight: 900;
+}
+
+.acceptButton {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+.declineButton {
+  background: #eeeeee;
+  color: #333;
+}
+
+.requestNotificationText {
+  margin: 10px 0 14px;
+  color: #555;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.disabledFriendButton {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 16px;
+  background: #eeeeee;
+  color: #555;
+  font-size: 16px;
+  font-weight: 900;
+}
