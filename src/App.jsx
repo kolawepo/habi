@@ -63,8 +63,48 @@ export default function App() {
   const [posts, setPosts] = useState([]);
 const [friends, setFriends] = useState([]);
 const [friendRequests, setFriendRequests] = useState([]);
-const [likedVideos, setLikedVideos] = useState([]);
-const [savedVideos, setSavedVideos] = useState([]);
+const [likedVideos, setLikedVideos] = useState(() => {
+  const saved = localStorage.getItem("likedVideos");
+  return saved ? JSON.parse(saved) : [];
+});
+
+const [savedVideos, setSavedVideos] = useState(() => {
+  const saved = localStorage.getItem("savedVideos");
+  return saved ? JSON.parse(saved) : [];
+});
+
+
+useEffect(() => {
+  localStorage.setItem(
+    "likedVideos",
+    JSON.stringify(likedVideos)
+  );
+}, [likedVideos]);
+
+
+useEffect(() => {
+  localStorage.setItem(
+    "savedVideos",
+    JSON.stringify(savedVideos)
+  );
+}, [savedVideos]);
+
+useEffect(() => {
+  if (!currentUser) return;
+
+  updateDoc(doc(db, "users", currentUser.uid), {
+    likedVideos,
+  });
+}, [likedVideos, currentUser]);
+
+useEffect(() => {
+  if (!currentUser) return;
+
+  updateDoc(doc(db, "users", currentUser.uid), {
+    savedVideos,
+  });
+}, [savedVideos, currentUser]);
+
 const [streak, setStreak] = useState(0);
 
   const [sharedVideos, setSharedVideos] = useState([]);
@@ -104,6 +144,10 @@ const [streak, setStreak] = useState(0);
           setStreak(userData.streak || 0);
           setFriends(userData.friends || []);
           setFriendRequests(userData.friendRequests || []);
+
+          setLikedVideos(userData.likedVideos || []);
+          setSavedVideos(userData.savedVideos || []);
+
           setScreen("main");
         } else {
           setScreen("splash");
@@ -431,6 +475,8 @@ async function handleRemoveFriend
     setTab("home");
     setAuthMode("login");
     setScreen("splash");
+    setLikedVideos([]);
+    setSavedVideos([]);
   }
 
   if (!authChecked) {
@@ -658,6 +704,7 @@ async function handleRemoveFriend
           tab={tab}
           setTab={setTab}
           name={name}
+          firstName={firstName}
           username={username}
           skills={finalSkills}
           streak={streak}
@@ -832,6 +879,8 @@ name: `${firstName.trim()} ${lastName.trim()}`,
 nameSearch: firstName.trim().toLowerCase(),
 fullNameSearch: `${firstName.trim()} ${lastName.trim()}`.toLowerCase(),
           username: cleanUsername,
+          likedVideos: [],
+          savedVideos: [],
           email,
           selectedThemes,
           selectedSkills: [...new Set(selectedSkills)],
@@ -981,6 +1030,7 @@ function MainApp({
   tab,
   setTab,
   name,
+  firstName,
   username,
   skills,
   streak,
@@ -1021,6 +1071,7 @@ function MainApp({
         {tab === "home" && (
          <Home
   name={name}
+  firstName={firstName}
   skills={skills}
   addMoreSkills={addMoreSkills}
   removeSkill={removeSkill}
@@ -1097,6 +1148,7 @@ function Page({ title, children }) {
 
 function Home({
   name,
+  firstName,
   skills,
   addMoreSkills,
   removeSkill,
@@ -1194,7 +1246,7 @@ function Home({
   }, [activeSkill, search, YOUTUBE_API_KEY]);
 
   return (
-    <Page title={`For ${name || "You"}`}>
+    <Page title={`For ${firstName|| "You"}`}>
       <div className="searchWrapper">
         <span>🔍</span>
 
