@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Page from "../components/Page";
 import VideoCard from "../components/VideoCard";
+import { skillEmoji } from "../utils/emojis";
 export default function Home({
   name,
   firstName,
@@ -189,44 +190,3 @@ friends={friends}
   );
 }
 
-
-function skillEmoji(skill) {
-  const map = {
-    Braiding: "💇🏾‍♀️",
-    "Wig Installs": "💇🏾‍♀️",
-    "Natural Hair": "🌀",
-    Makeup: "💄",
-    Lashes: "👁️",
-    Skincare: "🧴",
-    Frontend: "💻",
-    Python: "🐍",
-    "App Building": "📱",
-    "UI/UX": "🎨",
-    "Web Design": "🖥️",
-    "AI Tools": "🤖",
-    Photography: "📸",
-    "Video Editing": "🎬",
-    "Graphic Design": "🖼️",
-    Crochet: "🧶",
-    Drawing: "✏️",
-    Painting: "🎨",
-    "Gym Routine": "🏋️",
-    "Glute Growth": "🍑",
-    Pilates: "🧘",
-    Stretching: "🤸",
-    Running: "🏃",
-    Yoga: "🧘",
-    Styling: "👗",
-    "Outfit Planning": "👚",
-    Thrifting: "🛍️",
-    Sewing: "🧵",
-    "Fashion Content": "📸",
-    "Meal Prep": "🍱",
-    Baking: "🧁",
-    "Healthy Meals": "🥗",
-    "Recipe Videos": "🎥",
-    "Food Photography": "🍳",
-  };
-
-  return map[skill] || "✨";
-}

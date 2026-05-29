@@ -37,6 +37,13 @@ import {
 import { auth, db, storage } from "./firebase";
 
 import { BIBI, themes, goals } from "./data/appData";
+
+import {
+  goalEmoji,
+  sectionEmoji,
+  skillEmoji,
+} from "./utils/emojis";
+
 import Home from "./pages/Home";
 import TopBar from "./components/TopBar";
 import BottomNav from "./components/BottomNav";
@@ -49,6 +56,7 @@ import Page from "./components/Page";
 import Friends from "./pages/Friends";
 import MainApp from "./components/MainApp";
 import Profile from "./pages/Profile";
+
 
 export default function App() {
   const [screen, setScreen] = useState("splash");
@@ -841,74 +849,4 @@ async function handleRemoveFriend
   );
 }
 
-
-
-function goalEmoji(goal) {
-  if (goal.includes("fun")) return "🌟";
-  if (goal.includes("business")) return "💼";
-  if (goal.includes("confidence")) return "✨";
-  if (goal.includes("community")) return "❤️";
-
-  return "📈";
-}
-
-function sectionEmoji(section) {
-  const map = {
-    Hair: "💇🏾‍♀️",
-    Face: "💄",
-    Coding: "💻",
-    Design: "🎨",
-    Visual: "📸",
-    Handmade: "🧶",
-    Training: "🏋️",
-    Wellness: "🧘",
-    Style: "👗",
-    Create: "🧵",
-    Cooking: "🍳",
-    Content: "🎥",
-  };
-
-  return map[section] || "✨";
-}
-
-function skillEmoji(skill) {
-  const map = {
-    Braiding: "💇🏾‍♀️",
-    "Wig Installs": "💇🏾‍♀️",
-    "Natural Hair": "🌀",
-    Makeup: "💄",
-    Lashes: "👁️",
-    Skincare: "🧴",
-    Frontend: "💻",
-    Python: "🐍",
-    "App Building": "📱",
-    "UI/UX": "🎨",
-    "Web Design": "🖥️",
-    "AI Tools": "🤖",
-    Photography: "📸",
-    "Video Editing": "🎬",
-    "Graphic Design": "🖼️",
-    Crochet: "🧶",
-    Drawing: "✏️",
-    Painting: "🎨",
-    "Gym Routine": "🏋️",
-    "Glute Growth": "🍑",
-    Pilates: "🧘",
-    Stretching: "🤸",
-    Running: "🏃",
-    Yoga: "🧘",
-    Styling: "👗",
-    "Outfit Planning": "👚",
-    Thrifting: "🛍️",
-    Sewing: "🧵",
-    "Fashion Content": "📸",
-    "Meal Prep": "🍱",
-    Baking: "🧁",
-    "Healthy Meals": "🥗",
-    "Recipe Videos": "🎥",
-    "Food Photography": "🍳",
-  };
-
-  return map[skill] || "✨";
-}
 
