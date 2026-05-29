@@ -24,6 +24,7 @@ import {
   getDocs,
   arrayUnion,
   arrayRemove,
+  limit,
 } from "firebase/firestore";
 
 import {
@@ -2088,6 +2089,30 @@ function Profile({
 
   const [localComments, setLocalComments] = useState({});
 
+  useEffect(() => {
+  if (!selectedUpload) return;
+
+  const commentsQuery = query(
+  collection(db, "comments"),
+  where("postId", "==", selectedUpload.id)
+);
+
+  const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
+    const comments = snapshot.docs.map((docItem) => ({
+      id: docItem.id,
+      ...docItem.data(),
+      replies: [],
+    }));
+
+    setLocalComments((prev) => ({
+      ...prev,
+      [selectedUpload.id]: comments,
+    }));
+  });
+
+  return () => unsubscribe();
+}, [selectedUpload]);
+
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
 
@@ -2100,23 +2125,22 @@ function Profile({
 const [newUsername, setNewUsername] = useState("");
 const [changingUsername, setChangingUsername] = useState(false);
 
-  function addLocalComment(postId) {
-    if (!commentText.trim()) return;
+  async function addLocalComment(postId) {
+  if (!commentText.trim()) return;
 
-    const newComment = {
-      id: Date.now(),
+  try {
+    await addDoc(collection(db, "comments"), {
+      postId,
       username,
       text: commentText,
-      replies: [],
-    };
-
-    setLocalComments((prev) => ({
-      ...prev,
-      [postId]: [...(prev[postId] || []), newComment],
-    }));
+      createdAt: serverTimestamp(),
+    });
 
     setCommentText("");
+  } catch (error) {
+    alert(error.message);
   }
+}
 
   function addReply(postId, commentId) {
     if (!replyText.trim()) return;
