@@ -307,19 +307,43 @@ if (lastPostDate !== today) {
     }
   }
 
-  function continueSkillFlow() {
-    if (!skillTheme || !skillSection) return;
+ async function continueSkillFlow() {
+  if (!skillTheme || !skillSection) return;
 
-    setSkillTheme(null);
-    setSkillSection(null);
+  setSkillTheme(null);
+  setSkillSection(null);
 
-    if (isAddingSkill) {
-      setIsAddingSkill(false);
-      setScreen("main");
-    } else {
-      setScreen("goal");
-    }
+  if (isAddingSkill) {
+    const updatedSkills = [...new Set(selectedSkills)];
+
+        console.log("Current selectedSkills:", selectedSkills);
+
+    console.log("Saving to Firestore:", updatedSkills);
+
+    if (currentUser) {
+  await updateDoc(doc(db, "users", currentUser.uid), {
+    selectedSkills: updatedSkills,
+  });
+
+  console.log("Firestore update complete");
+
+  const freshUser = await getDoc(
+    doc(db, "users", currentUser.uid)
+  );
+
+  console.log(
+    "Firestore selectedSkills:",
+    freshUser.data().selectedSkills
+  );
+}
+
+    setIsAddingSkill(false);
+    setScreen("main");
+  } else {
+    setScreen("goal");
   }
+}
+
 async function handleSendFriendRequest(friendUid) {
   if (!currentUser || friendUid === currentUser.uid) return;
 
