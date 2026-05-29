@@ -2045,8 +2045,9 @@ textarea::placeholder {
 .friendListSection {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-bottom: 22px;
+  gap: 44px;
+  margin-top: 20px;
+  margin-bottom: 50px;
 }
 
 .friendRequestsSection h3,
@@ -2256,7 +2257,7 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-bottom: 22px;
+  margin-bottom: 10%;
 }
 
 .friendRequestsSection h3,
@@ -2313,7 +2314,7 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   color: #1f1f1f;
   font-weight: 800;
 }
@@ -2681,4 +2682,103 @@ textarea::placeholder {
   color: #555;
   font-size: 16px;
   font-weight: 900;
+}
+
+
+.friendBellBadge {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  background: #ff4f7b;
+  color: white;
+  font-size: 12px;
+  font-weight: 900;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.friendSearchCard {
+  background: white;
+  border-radius: 34px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.friendSearchTopRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.friendSearchInput {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.friendBellButton {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border: none;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  position: relative;
+}
+
+.friendBellBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ff4f7b;
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyFriendFeed {
+  margin-top: 40px;
+  padding: 32px 28px;
+  border-radius: 30px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.04);
+  text-align: center;
+}
+
+.emptyFriendFeed h3 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 900;
+  color: #222;
+}
+
+.emptyFriendFeed p {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #777;
+}
+
+.friendListSection {
+  margin-top: 82px;
+}
+
+.friendListSection h3 {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 900;
+  margin-bottom: 16px;
 }

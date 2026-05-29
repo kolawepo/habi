@@ -139,6 +139,25 @@ const [streak, setStreak] = useState(0);
     return () => unsubscribe();
   }, [currentUser]);
 
+  useEffect(() => {
+  if (!currentUser) return;
+
+  const userRef = doc(db, "users", currentUser.uid);
+
+  const unsubscribe = onSnapshot(userRef, (snapshot) => {
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.data();
+
+    setFriends(data.friends || []);
+    setFriendRequests(data.friendRequests || []);
+    setStreak(data.streak || 0);
+    setProfilePhotoUrl(data.profilePhotoUrl || "");
+  });
+
+  return () => unsubscribe();
+}, [currentUser]);
+
   function toggleTheme(themeName) {
     setSelectedThemes((prev) =>
       prev.includes(themeName)
@@ -304,11 +323,16 @@ if (lastPostDate !== today) {
 async function handleSendFriendRequest(friendUid) {
   if (!currentUser || friendUid === currentUser.uid) return;
 
+  console.log("Sending request to:", friendUid);
+  console.log("From user:", currentUser.uid);
+
   const friendRef = doc(db, "users", friendUid);
 
   await updateDoc(friendRef, {
     friendRequests: arrayUnion(currentUser.uid),
   });
+
+  console.log("Friend request saved in Firestore");
 
   alert("Friend request sent!");
 }
@@ -1368,7 +1392,6 @@ function Friends({
   friendRequests,
   handleAcceptFriendRequest,
   handleDeclineFriendRequest,
-  handleRemoveFriend,
   currentUser,
 }) {
   const [searchUsername, setSearchUsername] = useState("");
@@ -1376,24 +1399,25 @@ function Friends({
   const [friendRequestProfiles, setFriendRequestProfiles] = useState([]);
   const [friendProfiles, setFriendProfiles] = useState([]);
   const [selectedFriendProfile, setSelectedFriendProfile] = useState(null);
+  const [showRequests, setShowRequests] = useState(false);
 
   useEffect(() => {
     async function loadFriendRequests() {
-      if (friendRequests.length === 0) {
+      const filteredRequests = friendRequests.filter(
+        (uid) => !friends.includes(uid)
+      );
+
+      if (filteredRequests.length === 0) {
         setFriendRequestProfiles([]);
         return;
       }
 
       const profiles = await Promise.all(
-        friendRequests.map(async (uid) => {
+        filteredRequests.map(async (uid) => {
           const userSnap = await getDoc(doc(db, "users", uid));
-
           if (!userSnap.exists()) return null;
 
-          return {
-            uid,
-            ...userSnap.data(),
-          };
+          return { uid, ...userSnap.data() };
         })
       );
 
@@ -1401,7 +1425,7 @@ function Friends({
     }
 
     loadFriendRequests();
-  }, [friendRequests]);
+  }, [friendRequests, friends]);
 
   useEffect(() => {
     async function loadFriends() {
@@ -1413,13 +1437,9 @@ function Friends({
       const profiles = await Promise.all(
         friends.map(async (uid) => {
           const userSnap = await getDoc(doc(db, "users", uid));
-
           if (!userSnap.exists()) return null;
 
-          return {
-            uid,
-            ...userSnap.data(),
-          };
+          return { uid, ...userSnap.data() };
         })
       );
 
@@ -1430,49 +1450,41 @@ function Friends({
   }, [friends]);
 
   async function searchUsers() {
-  const cleanSearch = searchUsername
-    .trim()
-    .replace("@", "")
-    .toLowerCase();
+    const cleanSearch = searchUsername.trim().replace("@", "").toLowerCase();
 
-  if (!cleanSearch) return;
+    if (!cleanSearch) return;
 
-  const usersRef = collection(db, "users");
+    const usersRef = collection(db, "users");
+    const allUsersSnapshot = await getDocs(usersRef);
 
-  const allUsersSnapshot = await getDocs(usersRef);
+    const matchedUser = allUsersSnapshot.docs.find((docItem) => {
+      const data = docItem.data();
 
-  const matchedUser = allUsersSnapshot.docs.find((docItem) => {
-    const data = docItem.data();
+      const username = (data.username || "").toLowerCase();
+      const firstName = (data.firstName || "").toLowerCase();
+      const lastName = (data.lastName || "").toLowerCase();
+      const fullName = (data.name || "").toLowerCase();
 
-    const username = (data.username || "").toLowerCase();
-    const firstName = (data.firstName || "").toLowerCase();
-    const lastName = (data.lastName || "").toLowerCase();
-    const fullName = (data.name || "").toLowerCase();
-
-    return (
-  username.includes(cleanSearch) ||
-  firstName.includes(cleanSearch) ||
-  lastName.includes(cleanSearch) ||
-  fullName.includes(cleanSearch)
-);
-  });
-
-  if (
-  matchedUser &&
-  matchedUser.id !== currentUser?.uid
-) {
-    setSearchResult({
-      uid: matchedUser.id,
-      ...matchedUser.data(),
+      return (
+        username.includes(cleanSearch) ||
+        firstName.includes(cleanSearch) ||
+        lastName.includes(cleanSearch) ||
+        fullName.includes(cleanSearch)
+      );
     });
 
-    return;
+    if (matchedUser && matchedUser.id !== currentUser?.uid) {
+      setSearchResult({
+        uid: matchedUser.id,
+        ...matchedUser.data(),
+      });
+
+      return;
+    }
+
+    setSearchResult(null);
+    alert("User not found.");
   }
-
-  setSearchResult(null);
-
-  alert("User not found.");
-}
 
   const selectedFriendPosts = selectedFriendProfile
     ? allPosts.filter((post) => post.userId === selectedFriendProfile.uid)
@@ -1480,183 +1492,101 @@ function Friends({
 
   return (
     <Page title="Friends">
-      
       <div className="friendSearchCard">
-        <input
-          value={searchUsername}
-          onChange={(e) => setSearchUsername(e.target.value)}
-          placeholder="Search name or @username"
-          className="friendSearchInput"
-        />
 
-        <button className="primaryButton" onClick={searchUsers}>
+        
+
+
+    <div className="friendSearchTopRow">
+  <input
+    value={searchUsername}
+    onChange={(e) => setSearchUsername(e.target.value)}
+    placeholder="name or @username"
+    className="friendSearchInput"
+  />
+
+  <button
+    className="friendBellButton"
+    onClick={() => setShowRequests(true)}
+  >
+    🔔
+    {friendRequestProfiles.length > 0 && (
+      <span className="friendBellBadge">
+        {friendRequestProfiles.length}
+      </span>
+    )}
+  </button>
+</div>
+
+<button className="primaryButton" onClick={searchUsers}>
           Search
         </button>
 
+
         {searchResult && (
-  <div className="friendResultCard">
-    <div className="friendTopRow clickableFriendRow">
-      <div className="friendAvatar">
-        {searchResult.profilePhotoUrl ? (
-          <img src={searchResult.profilePhotoUrl} alt="profile" />
-        ) : (
-          searchResult.username?.charAt(0).toUpperCase()
+          <div className="friendResultCard">
+            <div className="friendTopRow">
+              <div className="friendAvatar">
+                {searchResult.profilePhotoUrl ? (
+                  <img src={searchResult.profilePhotoUrl} alt="profile" />
+                ) : (
+                  searchResult.username?.charAt(0).toUpperCase()
+                )}
+              </div>
+
+              <div className="friendUserInfo">
+                <h2 className="friendName">
+                  {searchResult.firstName || searchResult.name?.split(" ")[0]}
+                </h2>
+                <p className="friendUsername">@{searchResult.username}</p>
+              </div>
+            </div>
+
+            {friends.includes(searchResult.uid) ? (
+              <button className="removeFriendButton">Already Friends</button>
+            ) : searchResult.friendRequests?.includes(currentUser?.uid) ? (
+              <button
+                className="disabledFriendButton"
+                onClick={async () => {
+                  await handleCancelFriendRequest(searchResult.uid);
+
+                  setSearchResult((prev) => ({
+                    ...prev,
+                    friendRequests: (prev.friendRequests || []).filter(
+                      (id) => id !== currentUser.uid
+                    ),
+                  }));
+                }}
+              >
+                Cancel Request
+              </button>
+            ) : (
+              <button
+                className="primaryButton"
+                onClick={async () => {
+                  await handleSendFriendRequest(searchResult.uid);
+
+                  setSearchResult((prev) => ({
+                    ...prev,
+                    friendRequests: [
+                      ...(prev.friendRequests || []),
+                      currentUser.uid,
+                    ],
+                  }));
+                }}
+              >
+                Add Friend
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      <div className="friendUserInfo">
-        <h2 className="friendName">
-          {searchResult.firstName || searchResult.name?.split(" ")[0]}
-        </h2>
-
-        <p className="friendUsername">@{searchResult.username}</p>
-      </div>
-    </div>
-
-    {friends.includes(searchResult.uid) ? (
-      <button className="removeFriendButton">
-        Already Friends
-      </button>
-    ) : searchResult.friendRequests?.includes(currentUser?.uid) ? (
-      <button
-  className="disabledFriendButton"
-  onClick={async () => {
-    await handleCancelFriendRequest(searchResult.uid);
-
-    setSearchResult((prev) => ({
-      ...prev,
-      friendRequests: (prev.friendRequests || []).filter(
-        (id) => id !== currentUser.uid
-      ),
-    }));
-  }}
->
-  Cancel Request
-</button>
-    ) : (
-      <button
-        className="primaryButton"
-        onClick={async () => {
-          await handleSendFriendRequest(searchResult.uid);
-
-          setSearchResult((prev) => ({
-            ...prev,
-            friendRequests: [
-              ...(prev.friendRequests || []),
-              currentUser.uid,
-            ],
-          }));
-        }}
-      >
-        Add Friend
-      </button>
-    )}
-  </div>
-)}
-
-
-      {friendProfiles.length > 0 && (
-        <div className="friendListSection">
-          <h3>My Friends</h3>
-
-          <div className="friendListGrid">
-            {friendProfiles.map((friend) => (
-              <button
-                key={friend.uid}
-                className="friendProfileButton"
-                onClick={() => setSelectedFriendProfile(friend)}
-              >
-                <div className="friendAvatar">
-                  {friend.profilePhotoUrl ? (
-                    <img src={friend.profilePhotoUrl} alt="profile" />
-                  ) : (
-                    friend.username?.charAt(0).toUpperCase()
-                  )}
-                </div>
-
-                <span>@{friend.username}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-
-    {friendRequestProfiles.length > 0 && (
-  <div className="friendRequestsSection">
-    <h2 className="requestsTitle">
-      Friend Requests
-    </h2>
-
-    {friendRequestProfiles.map((request) => (
-      <div
-        key={request.uid}
-        className="friendRequestCard"
-      >
-        <div className="friendTopRow">
-          <div className="friendAvatar">
-            {request.profilePhotoUrl ? (
-              <img
-                src={request.profilePhotoUrl}
-                alt="profile"
-              />
-            ) : (
-              request.username
-                ?.charAt(0)
-                .toUpperCase()
-            )}
-          </div>
-
-          <div className="friendUserInfo">
-            <h2 className="friendName">
-              {request.firstName ||
-                request.name?.split(" ")[0]}
-            </h2>
-
-            <p className="friendUsername">
-              @{request.username}
-            </p>
-          </div>
-        </div>
-        
-<p className="requestNotificationText">
-  {request.firstName || request.name?.split(" ")[0]} sent you a friend request.
-</p>
-
-        <div className="requestButtons">
-          <button
-            className="acceptButton"
-            onClick={() =>
-              handleAcceptFriendRequest(
-                request.uid
-              )
-            }
-          >
-            Accept
-          </button>
-
-          <button
-            className="declineButton"
-            onClick={() =>
-              handleDeclineFriendRequest(
-                request.uid
-              )
-            }
-          >
-            Decline
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-
       {friendPosts.length === 0 && (
-        <div className="emptyVideoState">
-          No friend uploads yet. Add friends to see their posts.
-        </div>
-      )}
-
+  <div className="emptyFriendFeed">
+    <h3>No friend uploads yet</h3>
+  </div>
+)}
       <div className="videoFeed">
         {friendPosts.map((post) => (
           <div className="videoCard friendPostCard" key={post.id}>
@@ -1690,6 +1620,98 @@ function Friends({
           </div>
         ))}
       </div>
+
+{friendProfiles.length > 0 && (
+        <div className="friendListSection">
+          
+
+          <div className="friendListGrid">
+            {friendProfiles.map((friend) => (
+              <button
+                key={friend.uid}
+                className="friendProfileButton"
+                onClick={() => setSelectedFriendProfile(friend)}
+              >
+                <div className="friendAvatar">
+                  {friend.profilePhotoUrl ? (
+                    <img src={friend.profilePhotoUrl} alt="profile" />
+                  ) : (
+                    friend.username?.charAt(0).toUpperCase()
+                  )}
+                </div>
+
+                <span>@{friend.username}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showRequests && (
+        <div className="friendRequestModal">
+          <div className="friendRequestSheet">
+            <button
+              className="closeFriendProfile"
+              onClick={() => setShowRequests(false)}
+            >
+              ✕
+            </button>
+
+            <h2 className="requestsTitle">Friend Requests</h2>
+
+            {friendRequestProfiles.length === 0 ? (
+              <div className="emptyVideoState">
+                No friend requests right now.
+              </div>
+            ) : (
+              friendRequestProfiles.map((request) => (
+                <div key={request.uid} className="friendRequestCard">
+                  <div className="friendTopRow">
+                    <div className="friendAvatar">
+                      {request.profilePhotoUrl ? (
+                        <img src={request.profilePhotoUrl} alt="profile" />
+                      ) : (
+                        request.username?.charAt(0).toUpperCase()
+                      )}
+                    </div>
+
+                    <div className="friendUserInfo">
+                      <h2 className="friendName">
+                        {request.firstName || request.name?.split(" ")[0]}
+                      </h2>
+                      <p className="friendUsername">@{request.username}</p>
+                    </div>
+                  </div>
+
+                  <p className="requestNotificationText">
+                    {request.firstName || request.name?.split(" ")[0]} sent you
+                    a friend request.
+                  </p>
+
+                  <div className="requestButtons">
+                    <button
+                      className="acceptButton"
+                      onClick={() => {
+                        handleAcceptFriendRequest(request.uid);
+                        setShowRequests(false);
+                      }}
+                    >
+                      Accept
+                    </button>
+
+                    <button
+                      className="declineButton"
+                      onClick={() => handleDeclineFriendRequest(request.uid)}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {selectedFriendProfile && (
         <div className="friendProfileModal">
@@ -1732,9 +1754,7 @@ function Friends({
 
             <div className="friendUploadGrid">
               {selectedFriendPosts.length === 0 ? (
-                <div className="emptyVideoState">
-                  No uploads yet.
-                </div>
+                <div className="emptyVideoState">No uploads yet.</div>
               ) : (
                 selectedFriendPosts.map((post) => (
                   <div className="friendMiniUpload" key={post.id}>
@@ -1750,8 +1770,6 @@ function Friends({
           </div>
         </div>
       )}
-      </div>
-      
     </Page>
   );
 }
@@ -2791,3 +2809,4 @@ function skillEmoji(skill) {
 
   return map[skill] || "✨";
 }
+
