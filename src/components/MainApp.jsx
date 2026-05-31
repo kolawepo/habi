@@ -3,6 +3,7 @@ import Friends from "../pages/Friends";
 import Upload from "../pages/Upload";
 import Streaks from "../pages/Streaks";
 import Profile from "../pages/Profile";
+import Messages from "../pages/Messages";
 import BottomNav from "./BottomNav";
 
 export default function MainApp({
@@ -43,15 +44,18 @@ export default function MainApp({
   profilePhotoUrl,
   setProfilePhotoUrl,
   allPosts,
-   notifications,
+  notifications,
+  onShareToFriend,
 }) {
   return (
     <section className="mainApp">
       <div className="mainContent">
         {tab === "home" && (
-         <Home
+  <Home
   name={name}
   firstName={firstName}
+  username={username}
+  currentUser={currentUser}
   skills={skills}
   addMoreSkills={addMoreSkills}
   removeSkill={removeSkill}
@@ -61,10 +65,10 @@ export default function MainApp({
   setSavedVideos={setSavedVideos}
   sharedVideos={sharedVideos}
   setSharedVideos={setSharedVideos}
-
   friends={friends}
   profilePhotoUrl={profilePhotoUrl}
   setProfilePhotoUrl={setProfilePhotoUrl}
+  onShareToFriend={onShareToFriend}
 />
         )}
 
@@ -98,6 +102,10 @@ handleDeclineFriendRequest={handleDeclineFriendRequest}
 
         {tab === "streaks" && <Streaks streak={streak} />}
 
+        {tab === "messages" && (
+          <Messages currentUser={currentUser} username={username} />
+        )}
+
         {tab === "profile" && (
           <Profile
             username={username}
@@ -117,3 +125,4 @@ handleDeclineFriendRequest={handleDeclineFriendRequest}
     </section>
   );
 }
+

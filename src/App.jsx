@@ -44,18 +44,10 @@ import {
   skillEmoji,
 } from "./utils/emojis";
 
-import Home from "./pages/Home";
-import TopBar from "./components/TopBar";
-import BottomNav from "./components/BottomNav";
 import Splash from "./components/Splash";
 import Onboarding from "./components/Onboarding";
 import AuthScreen from "./components/AuthScreen";
-import Upload from "./pages/Upload";
-import Streaks from "./pages/Streaks";
-import Page from "./components/Page";
-import Friends from "./pages/Friends";
 import MainApp from "./components/MainApp";
-import Profile from "./pages/Profile";
 
 
 export default function App() {
@@ -554,6 +546,34 @@ async function handleRemoveFriend
   setFriends((prev) => prev.filter((id) => id !== friendUid));
 }
 
+  async function handleSendDM(recipientUid, videoData) {
+    if (!currentUser) return;
+
+    const participants = [currentUser.uid, recipientUid].sort();
+    const conversationId = participants.join("_");
+
+    await setDoc(
+      doc(db, "dms", conversationId),
+      {
+        participants,
+        lastMessage: `Shared: ${videoData.title}`,
+        lastMessageAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    await addDoc(collection(db, "dms", conversationId, "messages"), {
+      senderId: currentUser.uid,
+      senderUsername: username,
+      videoId: videoData.videoId,
+      videoTitle: videoData.title,
+      videoThumbnail: videoData.thumbnail,
+      videoSkill: videoData.skill,
+      text: "",
+      createdAt: serverTimestamp(),
+    });
+  }
+
   async function handleSignOut() {
     await signOut(auth);
 
@@ -843,6 +863,7 @@ async function handleRemoveFriend
           setProfilePhotoUrl={setProfilePhotoUrl}
           allPosts={posts}
           notifications={notifications}
+          onShareToFriend={handleSendDM}
           />
       )}
     </div>

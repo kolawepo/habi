@@ -1,3 +1,6 @@
+import { useState } from "react";
+import ShareModal from "./ShareModal";
+
 export default function VideoCard({
   skill,
   title,
@@ -7,16 +10,17 @@ export default function VideoCard({
   isPlaying,
   onPlay,
   likedVideos,
-setLikedVideos,
-
-savedVideos,
-setSavedVideos,
-
-sharedVideos,
-setSharedVideos,
-
-friends,
+  setLikedVideos,
+  savedVideos,
+  setSavedVideos,
+  sharedVideos,
+  setSharedVideos,
+  friends,
+  username,
+  currentUser,
+  onShareToFriend,
 }) {
+  const [showShare, setShowShare] = useState(false);
   const liked = likedVideos.some(
   (video) => video.videoId === videoId
 );
@@ -26,6 +30,7 @@ const saved = savedVideos.some(
 );
 
   return (
+    <>
     <article className="tiktokVideoCard">
       {!isPlaying ? (
         <div
@@ -108,17 +113,29 @@ const saved = savedVideos.some(
         </button>
 
         <button
-  onClick={() => {
-    alert(
-      friends.length > 0
-        ? "Friend sharing UI coming next ✨"
-        : "Add friends first to share videos."
-    );
-  }}
->
-  📤
-</button>
+          onClick={() => {
+            if (friends.length === 0) {
+              alert("Add friends first to share videos.");
+              return;
+            }
+            setShowShare(true);
+          }}
+        >
+          📤
+        </button>
       </div>
     </article>
+
+    {showShare && (
+      <ShareModal
+        friends={friends}
+        videoTitle={title}
+        onSend={(friendUid) => {
+          onShareToFriend(friendUid, { videoId, title, creator, thumbnail, skill });
+        }}
+        onClose={() => setShowShare(false)}
+      />
+    )}
+    </>
   );
 }

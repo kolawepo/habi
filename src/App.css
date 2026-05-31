@@ -2848,3 +2848,297 @@ textarea::placeholder {
   margin: 0;
   font-weight: 700;
 }
+
+/* =========================
+   SHARE MODAL
+========================= */
+
+.shareOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.shareSheet {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 34px 34px 0 0;
+  padding: 28px 24px 40px;
+  max-height: 70svh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.shareTitle {
+  font-size: 28px;
+  font-weight: 900;
+  color: #1f1f1f;
+  margin-bottom: 6px;
+  padding-right: 40px;
+}
+
+.shareVideoLabel {
+  font-size: 14px;
+  color: #888;
+  font-weight: 700;
+  margin-bottom: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shareFriendList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.shareFriendRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: none;
+  background: #fff7f4;
+  border-radius: 24px;
+  padding: 14px 18px;
+  width: 100%;
+  text-align: left;
+  transition: 0.15s;
+}
+
+.shareFriendRow:active {
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+.shareFriendInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.sentConfirmation {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 900;
+  color: #e95443;
+  padding: 20px 0 10px;
+}
+
+/* =========================
+   BOTTOM NAV (6 items)
+========================= */
+
+.bottomNav button span {
+  font-size: 11px;
+}
+
+/* =========================
+   MESSAGES PAGE
+========================= */
+
+.conversationList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.conversationRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: none;
+  background: white;
+  border-radius: 28px;
+  padding: 18px;
+  width: 100%;
+  text-align: left;
+  transition: 0.15s;
+}
+
+.conversationRow:active {
+  transform: scale(0.98);
+}
+
+.convoInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.convoName {
+  font-size: 18px;
+  font-weight: 900;
+  color: #1f1f1f;
+  margin-bottom: 4px;
+}
+
+.convoLast {
+  font-size: 14px;
+  color: #888;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   DM THREAD
+========================= */
+
+.dmThreadPage {
+  padding-bottom: 160px;
+}
+
+.dmHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.dmHeaderAvatar {
+  width: 46px !important;
+  height: 46px !important;
+  font-size: 18px !important;
+  flex-shrink: 0;
+}
+
+.dmBackButton {
+  border: none;
+  background: white;
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #1f1f1f;
+  flex-shrink: 0;
+}
+
+.dmHeaderName {
+  font-size: 18px;
+  font-weight: 900;
+  color: #1f1f1f;
+  margin-bottom: 2px;
+}
+
+.dmHeaderUsername {
+  font-size: 13px;
+  color: #888;
+  font-weight: 700;
+}
+
+.messageThread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 50vh;
+}
+
+.messageBubble {
+  max-width: 78%;
+  border-radius: 22px;
+  padding: 12px 16px;
+  overflow: hidden;
+}
+
+.myMessage {
+  align-self: flex-end;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+}
+
+.theirMessage {
+  align-self: flex-start;
+  background: white;
+  color: #1f1f1f;
+}
+
+.myMessage p,
+.theirMessage p {
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.sharedVideoPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sharedVideoPreview img {
+  width: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+  aspect-ratio: 16 / 9;
+  display: block;
+}
+
+.sharedVideoInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sharedVideoInfo small {
+  font-size: 11px;
+  opacity: 0.7;
+  font-weight: 700;
+}
+
+.sharedVideoInfo p {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.sharedVideoInfo span {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.dmInputBar {
+  position: fixed;
+  bottom: 96px;
+  left: 0;
+  right: 0;
+  padding: 12px 20px;
+  background: #f6f1ee;
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+}
+
+.dmInputBar input {
+  flex: 1;
+  background: white;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-size: 15px;
+  color: #111;
+  min-width: 0;
+}
+
+.dmInputBar input::placeholder {
+  color: #999;
+}
+
+.dmInputBar button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 22px;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-weight: 900;
+}

@@ -5,6 +5,8 @@ import { skillEmoji } from "../utils/emojis";
 export default function Home({
   name,
   firstName,
+  username,
+  currentUser,
   skills,
   addMoreSkills,
   removeSkill,
@@ -19,6 +21,7 @@ export default function Home({
   setSharedVideos,
 
   friends,
+  onShareToFriend,
 }) {
   const [search, setSearch] = useState("");
   const [activeSkill, setActiveSkill] = useState(skills[0] || "Braiding");
@@ -164,25 +167,25 @@ export default function Home({
         <div className="tiktokVideoFeed">
           {videos.map((video) => (
             <VideoCard
-              key={video.id}
-              skill={activeSkill}
-              title={video.title}
-              creator={video.creator}
-              thumbnail={video.thumbnail}
-              videoId={video.id}
-              isPlaying={playingVideoId === video.id}
-              onPlay={() => setPlayingVideoId(video.id)}
-              likedVideos={likedVideos}
-setLikedVideos={setLikedVideos}
-
-savedVideos={savedVideos}
-setSavedVideos={setSavedVideos}
-
-sharedVideos={sharedVideos}
-setSharedVideos={setSharedVideos}
-
-friends={friends}
-            />
+  key={video.id}
+  skill={activeSkill}
+  title={video.title}
+  creator={video.creator}
+  thumbnail={video.thumbnail}
+  videoId={video.id}
+  isPlaying={playingVideoId === video.id}
+  onPlay={() => setPlayingVideoId(video.id)}
+  likedVideos={likedVideos}
+  setLikedVideos={setLikedVideos}
+  savedVideos={savedVideos}
+  setSavedVideos={setSavedVideos}
+  sharedVideos={sharedVideos}
+  setSharedVideos={setSharedVideos}
+  friends={friends}
+  username={username}
+  currentUser={currentUser}
+  onShareToFriend={onShareToFriend}
+/>
           ))}
         </div>
       )}

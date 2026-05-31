@@ -27,6 +27,13 @@ export default function BottomNav({ tab, setTab }) {
       </button>
 
       <button
+        className={tab === "messages" ? "active" : ""}
+        onClick={() => setTab("messages")}
+      >
+        💬<span>Messages</span>
+      </button>
+
+      <button
         className={tab === "profile" ? "active" : ""}
         onClick={() => setTab("profile")}
       >
