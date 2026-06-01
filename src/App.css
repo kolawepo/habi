@@ -2279,6 +2279,365 @@ textarea::placeholder {
   line-height: 1.2;
 }
 
+/* ── Friends Page ─────────────────────────────────────── */
+
+/* Flex column so invite card is pushed to the bottom when content is short,
+   and scrolls naturally below content when there are many friends/posts. */
+.fpInner {
+  min-height: calc(100dvh - 200px);
+  display: flex;
+  flex-direction: column;
+}
+
+.fpScrollable {
+  flex: 1;
+}
+
+.fpSection {
+  margin-bottom: 28px;
+}
+
+.fpSectionTitle {
+  font-size: 17px;
+  font-weight: 900;
+  color: #1f1f1f;
+  margin-bottom: 12px;
+}
+
+.fpFriendList {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.fpFriendRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #f4f4f4;
+}
+
+.fpFriendRow:last-child {
+  border-bottom: none;
+}
+
+.fpAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.fpAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9950, #ff5f87);
+  color: white;
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.fpAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fpOnlineDot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid white;
+  display: block;
+}
+
+.fpFriendInfo {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.fpFriendName {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fpFriendHandle {
+  font-size: 13px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.fpOnlineLabel {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.fpMsgBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: none;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fpEmpty {
+  color: #aaa;
+  font-size: 15px;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.fpActivityFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fpActivityCard {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.fpActivityHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 10px;
+}
+
+.fpActivityAvatar {
+  flex-shrink: 0;
+}
+
+.fpActivityMedia {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.fpActivityCaption {
+  padding: 10px 16px 14px;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.45;
+}
+
+.fpInviteCard {
+  background: linear-gradient(135deg, #ff9950, #ff5f87);
+  border-radius: 20px;
+  padding: 22px;
+  color: white;
+  margin-bottom: 24px;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fpInviteCard:active {
+  opacity: 0.88;
+}
+
+.fpInviteCard p {
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.fpInviteSub {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.fpToast {
+  position: fixed;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f1f1f;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 22px;
+  border-radius: 999px;
+  z-index: 2147483647;
+  white-space: nowrap;
+  animation: fpToastIn 0.2s ease;
+}
+
+@keyframes fpToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Notifications panel (portal) ─────────────────────── */
+
+.fnOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fnPanel {
+  width: 88%;
+  max-width: 430px;
+  height: 100%;
+  background: #f6f1ee;
+  padding: 56px 20px 120px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 34px 0 0 34px;
+  position: relative;
+  animation: slideInPanel 0.25s ease;
+}
+
+.fnClose {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.08);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #444;
+}
+
+.fnTitle {
+  font-size: 26px;
+  font-weight: 900;
+  color: #1f1f1f;
+  margin-bottom: 6px;
+}
+
+.fnSectionLabel {
+  font-size: 17px;
+  font-weight: 900;
+  color: #1f1f1f;
+  margin: 24px 0 12px;
+}
+
+.fnEmpty {
+  color: #aaa;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.fnRequestCard {
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.fnReqInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fnReqName {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+}
+
+.fnReqHandle {
+  font-size: 13px;
+  color: #888;
+}
+
+.fnReqSubtext {
+  font-size: 13px;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+.fnReqBtns {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.fnAccept {
+  flex: 1;
+  background: #e95443;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.fnDecline {
+  flex: 1;
+  background: #f0f0f0;
+  color: #555;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.fnActivityCard {
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+/* ── End Friends Page ─────────────────────────────────── */
+
 .friendSearchCard {
   background: white;
   border-radius: 34px;

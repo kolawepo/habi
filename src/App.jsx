@@ -119,6 +119,17 @@ useEffect(() => {
   });
 }, [savedVideos, currentUser]);
 
+// Presence: stamp lastSeen on open and every time the tab comes back to foreground
+useEffect(() => {
+  if (!currentUser) return;
+  const userRef = doc(db, "users", currentUser.uid);
+  const ping = () => updateDoc(userRef, { lastSeen: serverTimestamp() }).catch(() => {});
+  ping();
+  const onVisible = () => { if (document.visibilityState === "visible") ping(); };
+  document.addEventListener("visibilitychange", onVisible);
+  return () => document.removeEventListener("visibilitychange", onVisible);
+}, [currentUser]); // eslint-disable-line
+
 const [streak, setStreak] = useState(0);
 
   const [sharedVideos, setSharedVideos] = useState([]);

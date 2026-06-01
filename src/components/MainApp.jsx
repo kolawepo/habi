@@ -72,20 +72,17 @@ export default function MainApp({
         )}
 
         {tab === "friends" && (
-  <Friends
-    friendPosts={friendPosts}
-    allPosts={allPosts}
-    friends={friends}
-    notifications={notifications}
-    handleSendFriendRequest={handleSendFriendRequest}
-    handleCancelFriendRequest={handleCancelFriendRequest}
-friendRequests={friendRequests}
-handleAcceptFriendRequest={handleAcceptFriendRequest}
-handleDeclineFriendRequest={handleDeclineFriendRequest}
-    handleRemoveFriend={handleRemoveFriend}
-    currentUser={currentUser}
-  />
-)}
+          <Friends
+            friendPosts={friendPosts}
+            allPosts={allPosts}
+            friends={friends}
+            notifications={notifications}
+            friendRequests={friendRequests}
+            handleAcceptFriendRequest={handleAcceptFriendRequest}
+            handleDeclineFriendRequest={handleDeclineFriendRequest}
+            setTab={setTab}
+          />
+        )}
 
         {tab === "upload" && (
           <Upload
