@@ -1,4 +1,4 @@
-export default function BottomNav({ tab, setTab }) {
+export default function BottomNav({ tab, setTab, onOpenSearch }) {
   return (
     <nav className="bottomNav">
       <button
@@ -13,6 +13,10 @@ export default function BottomNav({ tab, setTab }) {
         onClick={() => setTab("friends")}
       >
         👥<span>Friends</span>
+      </button>
+
+      <button className="navSearchBtn" onClick={onOpenSearch}>
+        🔍<span>Search</span>
       </button>
 
       <button className="plusButton" onClick={() => setTab("upload")}>

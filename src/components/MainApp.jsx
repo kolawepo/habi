@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Home from "../pages/Home";
 import Friends from "../pages/Friends";
 import Upload from "../pages/Upload";
@@ -5,6 +6,7 @@ import Streaks from "../pages/Streaks";
 import Profile from "../pages/Profile";
 import Messages from "../pages/Messages";
 import BottomNav from "./BottomNav";
+import FriendSearchOverlay from "./FriendSearchOverlay";
 
 export default function MainApp({
   tab,
@@ -47,28 +49,25 @@ export default function MainApp({
   notifications,
   onShareToFriend,
 }) {
+  const [showSearch, setShowSearch] = useState(false);
+
   return (
     <section className="mainApp">
       <div className="mainContent">
         {tab === "home" && (
   <Home
-  name={name}
   firstName={firstName}
-  username={username}
   currentUser={currentUser}
+  username={username}
   skills={skills}
-  addMoreSkills={addMoreSkills}
-  removeSkill={removeSkill}
+  allPosts={allPosts}
   likedVideos={likedVideos}
   setLikedVideos={setLikedVideos}
   savedVideos={savedVideos}
   setSavedVideos={setSavedVideos}
-  sharedVideos={sharedVideos}
-  setSharedVideos={setSharedVideos}
   friends={friends}
-  profilePhotoUrl={profilePhotoUrl}
-  setProfilePhotoUrl={setProfilePhotoUrl}
   onShareToFriend={onShareToFriend}
+  addMoreSkills={addMoreSkills}
 />
         )}
 
@@ -97,6 +96,7 @@ handleDeclineFriendRequest={handleDeclineFriendRequest}
             setCaption={setCaption}
             handleCreatePost={handleCreatePost}
             posting={posting}
+            skills={skills}
           />
         )}
 
@@ -121,7 +121,17 @@ handleDeclineFriendRequest={handleDeclineFriendRequest}
         )}
       </div>
 
-      <BottomNav tab={tab} setTab={setTab} />
+      <BottomNav tab={tab} setTab={setTab} onOpenSearch={() => setShowSearch(true)} />
+
+      {showSearch && (
+        <FriendSearchOverlay
+          onClose={() => setShowSearch(false)}
+          friends={friends}
+          currentUser={currentUser}
+          handleSendFriendRequest={handleSendFriendRequest}
+          handleCancelFriendRequest={handleCancelFriendRequest}
+        />
+      )}
     </section>
   );
 }

@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 import Page from "../components/Page";
 
-import {
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 import { db } from "../firebase";
 
@@ -15,15 +10,10 @@ export default function Friends({
   allPosts,
   friends,
   notifications,
-  handleSendFriendRequest,
-  handleCancelFriendRequest,
   friendRequests,
   handleAcceptFriendRequest,
   handleDeclineFriendRequest,
-  currentUser,
 }) {
-  const [searchUsername, setSearchUsername] = useState("");
-  const [searchResult, setSearchResult] = useState(null);
   const [friendRequestProfiles, setFriendRequestProfiles] = useState([]);
   const [friendProfiles, setFriendProfiles] = useState([]);
   const [selectedFriendProfile, setSelectedFriendProfile] = useState(null);
@@ -77,138 +67,21 @@ export default function Friends({
     loadFriends();
   }, [friends]);
 
-  async function searchUsers() {
-    const cleanSearch = searchUsername.trim().replace("@", "").toLowerCase();
-
-    if (!cleanSearch) return;
-
-    const usersRef = collection(db, "users");
-    const allUsersSnapshot = await getDocs(usersRef);
-
-    const matchedUser = allUsersSnapshot.docs.find((docItem) => {
-      const data = docItem.data();
-
-      const username = (data.username || "").toLowerCase();
-      const firstName = (data.firstName || "").toLowerCase();
-      const lastName = (data.lastName || "").toLowerCase();
-      const fullName = (data.name || "").toLowerCase();
-
-      return (
-        username.includes(cleanSearch) ||
-        firstName.includes(cleanSearch) ||
-        lastName.includes(cleanSearch) ||
-        fullName.includes(cleanSearch)
-      );
-    });
-
-    if (matchedUser && matchedUser.id !== currentUser?.uid) {
-      setSearchResult({
-        uid: matchedUser.id,
-        ...matchedUser.data(),
-      });
-
-      return;
-    }
-
-    setSearchResult(null);
-    alert("User not found.");
-  }
-
   const selectedFriendPosts = selectedFriendProfile
     ? allPosts.filter((post) => post.userId === selectedFriendProfile.uid)
     : [];
 
   return (
     <Page title="Friends">
-      <div className="friendSearchCard">
-
-        
-
-
-    <div className="friendSearchTopRow">
-  <input
-    value={searchUsername}
-    onChange={(e) => setSearchUsername(e.target.value)}
-    placeholder="name or @username"
-    className="friendSearchInput"
-  />
-
-  <button
-    className="friendBellButton"
-    onClick={() => setShowRequests(true)}
-  >
-    🔔
-    {notifications.length > 0 && (
-  <span className="friendBellBadge">
-    {notifications.length}
-  </span>
-)}
-  </button>
-</div>
-
-<button className="primaryButton" onClick={searchUsers}>
-          Search
-        </button>
-
-
-        {searchResult && (
-          <div className="friendResultCard">
-            <div className="friendTopRow">
-              <div className="friendAvatar">
-                {searchResult.profilePhotoUrl ? (
-                  <img src={searchResult.profilePhotoUrl} alt="profile" />
-                ) : (
-                  searchResult.username?.charAt(0).toUpperCase()
-                )}
-              </div>
-
-              <div className="friendUserInfo">
-                <h2 className="friendName">
-                  {searchResult.firstName || searchResult.name?.split(" ")[0]}
-                </h2>
-                <p className="friendUsername">@{searchResult.username}</p>
-              </div>
-            </div>
-
-            {friends.includes(searchResult.uid) ? (
-              <button className="removeFriendButton">Already Friends</button>
-            ) : searchResult.friendRequests?.includes(currentUser?.uid) ? (
-              <button
-                className="disabledFriendButton"
-                onClick={async () => {
-                  await handleCancelFriendRequest(searchResult.uid);
-
-                  setSearchResult((prev) => ({
-                    ...prev,
-                    friendRequests: (prev.friendRequests || []).filter(
-                      (id) => id !== currentUser.uid
-                    ),
-                  }));
-                }}
-              >
-                Cancel Request
-              </button>
-            ) : (
-              <button
-                className="primaryButton"
-                onClick={async () => {
-                  await handleSendFriendRequest(searchResult.uid);
-
-                  setSearchResult((prev) => ({
-                    ...prev,
-                    friendRequests: [
-                      ...(prev.friendRequests || []),
-                      currentUser.uid,
-                    ],
-                  }));
-                }}
-              >
-                Add Friend
-              </button>
-            )}
-          </div>
+      <button
+        className="friendBellButton friendsBellFloat"
+        onClick={() => setShowRequests(true)}
+      >
+        🔔
+        {notifications.length > 0 && (
+          <span className="friendBellBadge">{notifications.length}</span>
         )}
-      </div>
+      </button>
 
       {friendPosts.length === 0 && (
   <div className="emptyFriendFeed">

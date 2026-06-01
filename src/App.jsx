@@ -129,11 +129,9 @@ const [streak, setStreak] = useState(0);
 
   const finalSkills = [...new Set(selectedSkills)];
 
-  if (finalSkills.length === 0) {
-    finalSkills.push("Braiding");
-  }
-
-  const myPosts = posts.filter((post) => post.userId === currentUser?.uid);
+  const myPosts = posts.filter(
+    (post) => post.userId === currentUser?.uid && post.postType !== "tutorial"
+  );
   const friendFeedPosts = posts.filter((post) =>
   friends.includes(post.userId)
 );
@@ -241,6 +239,7 @@ const [streak, setStreak] = useState(0);
     setStreak(data.streak || 0);
     setProfilePhotoUrl(data.profilePhotoUrl || "");
     setUsername(data.username || "");
+    setSelectedSkills(data.selectedSkills || []);
   });
 
   return () => unsubscribe();
@@ -285,7 +284,7 @@ const [streak, setStreak] = useState(0);
   setUploadPreview(URL.createObjectURL(file));
 }
 
-  async function handleCreatePost() {
+  async function handleCreatePost(postType = "progress", tutorialSkill = null) {
     if (!currentUser) return;
 
     if (!uploadFile) {
@@ -303,57 +302,65 @@ const [streak, setStreak] = useState(0);
 
       const mediaUrl = await getDownloadURL(fileRef);
 
-      const skill = finalSkills[0] || "Skill";
+      const skill =
+        postType === "tutorial" && tutorialSkill
+          ? tutorialSkill
+          : finalSkills[0] || "Skill";
+
+      const defaultCaption =
+        postType === "tutorial" ? "Watch and learn!" : "Practiced today!";
 
       const postRef = await addDoc(collection(db, "posts"), {
-  userId: currentUser.uid,
-  name,
-  firstName,
-  username,
+        userId: currentUser.uid,
+        name,
+        firstName,
+        username,
         skill,
-        caption: caption || "Practiced today!",
+        caption: caption || defaultCaption,
         mediaUrl,
         mediaType: uploadFile.type,
         filePath,
+        postType,
         createdAt: serverTimestamp(),
       });
+
+      const notificationText =
+        postType === "tutorial"
+          ? `${username} shared a tutorial on ${skill}`
+          : `${username} uploaded progress in ${skill}`;
+
       for (const friendId of friends) {
-  await addDoc(collection(db, "notifications"), {
-    userId: friendId,
-    senderUsername: username,
-    type: "post",
-    text: `${username} uploaded progress in ${skill}`,    postId: postRef.id,
-    createdAt: serverTimestamp(),
-    read: false,
-  });
-}
+        await addDoc(collection(db, "notifications"), {
+          userId: friendId,
+          senderUsername: username,
+          type: "post",
+          text: notificationText,
+          postId: postRef.id,
+          createdAt: serverTimestamp(),
+          read: false,
+        });
+      }
 
       const today = new Date().toDateString();
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
+      const lastPostDate = userData?.lastPostDate;
+      let updatedStreak = userData?.streak || 0;
 
-const userRef = doc(db, "users", currentUser.uid);
+      if (lastPostDate !== today) {
+        updatedStreak += 1;
+        await updateDoc(userRef, {
+          streak: updatedStreak,
+          lastPostDate: today,
+        });
+        setStreak(updatedStreak);
+      }
 
-const userSnap = await getDoc(userRef);
-
-const userData = userSnap.data();
-
-const lastPostDate = userData?.lastPostDate;
-
-let updatedStreak = userData?.streak || 0;
-
-if (lastPostDate !== today) {
-  updatedStreak += 1;
-
-  await updateDoc(userRef, {
-    streak: updatedStreak,
-    lastPostDate: today,
-  });
-
-  setStreak(updatedStreak);
-}
       setUploadFile(null);
       setUploadPreview(null);
       setCaption("");
-      setTab("profile");
+      setTab(postType === "tutorial" ? "home" : "profile");
     } catch (error) {
       alert(error.message);
     } finally {
