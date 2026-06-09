@@ -814,95 +814,6 @@ textarea {
 }
 
 /* =========================
-   SKILLS BOTTOM SHEET
-========================= */
-
-.skillsSheetOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 300;
-}
-
-.skillsSheet {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 301;
-  background: #1a1a1a;
-  border-radius: 20px 20px 0 0;
-  padding: 12px 20px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.skillsSheetHandle {
-  width: 40px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.25);
-  margin: 0 auto 16px;
-}
-
-.skillsSheetTitle {
-  font-size: 17px;
-  font-weight: 700;
-  color: white;
-  text-align: center;
-  margin-bottom: 16px;
-}
-
-.skillsSheetList {
-  list-style: none;
-  margin: 0 0 20px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.skillsSheetItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 13px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.07);
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-}
-
-.skillsSheetRemoveBtn {
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-  font-weight: 700;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.skillsSheetAddBtn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 14px;
-  border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-  text-align: center;
-}
-
-/* =========================
    TIKTOK FEED
 ========================= */
 
@@ -4004,7 +3915,7 @@ textarea::placeholder {
 .skillsSheetOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.6);
   z-index: 99999;
   display: flex;
   align-items: flex-end;
@@ -4013,85 +3924,80 @@ textarea::placeholder {
 
 .skillsSheet {
   width: 100%;
-  max-width: 520px;
-  background: white;
-  border-radius: 34px 34px 0 0;
-  padding: 28px 24px 40px;
+  max-width: 420px;
+  background: #1c1c1e;
+  border-radius: 24px 24px 0 0;
+  padding: 12px 20px 44px;
   max-height: 75svh;
   overflow-y: auto;
-}
-
-.skillsSheetHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
+  flex-direction: column;
 }
 
-.skillsSheetHeader h2 {
-  font-size: 26px;
-  font-weight: 900;
-  color: #1f1f1f;
-}
-
-.skillsSheetClose {
-  border: none;
-  background: #f3f3f3;
-  border-radius: 50%;
+.skillsSheetHandle {
   width: 36px;
-  height: 36px;
-  font-size: 14px;
-  font-weight: 900;
-  color: #555;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 auto 18px;
+  flex-shrink: 0;
 }
 
-.skillsSheetEmpty {
-  color: #999;
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 24px;
+.skillsSheetTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .skillsSheetList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
+  gap: 8px;
 }
 
 .skillsSheetItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f6f1ee;
-  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
   padding: 14px 16px;
   font-size: 16px;
-  font-weight: 700;
-  color: #1f1f1f;
+  font-weight: 600;
+  color: white;
 }
 
 .skillsSheetRemove {
   border: none;
-  background: #ffe5e5;
-  color: #e95443;
+  background: rgba(255, 59, 48, 0.2);
+  color: #ff453a;
   border-radius: 50%;
   width: 30px;
   height: 30px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .skillsSheetAdd {
   width: 100%;
   border: none;
-  border-radius: 999px;
+  border-radius: 14px;
   padding: 15px;
-  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  background: rgba(255, 255, 255, 0.1);
   color: white;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* =========================

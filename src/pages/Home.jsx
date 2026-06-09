@@ -643,9 +643,8 @@ export default function Home({
       )}
 
       {showSkillsSheet && (
-        <>
-          <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)} />
-          <div className="skillsSheet">
+        <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)}>
+          <div className="skillsSheet" onClick={e => e.stopPropagation()}>
             <div className="skillsSheetHandle" />
             <p className="skillsSheetTitle">My Skills</p>
             <ul className="skillsSheetList">
@@ -654,8 +653,8 @@ export default function Home({
                   <span>{skillEmoji(s)} {s}</span>
                   {skills.length > 1 && removeSkill && (
                     <button
-                      className="skillsSheetRemoveBtn"
-                      onClick={() => { removeSkill(s); if (skills.length <= 2) setShowSkillsSheet(false); }}
+                      className="skillsSheetRemove"
+                      onClick={() => removeSkill(s)}
                     >✕</button>
                   )}
                 </li>
@@ -663,12 +662,12 @@ export default function Home({
             </ul>
             {addMoreSkills && (
               <button
-                className="skillsSheetAddBtn"
+                className="skillsSheetAdd"
                 onClick={() => { setShowSkillsSheet(false); addMoreSkills(); }}
               >+ Add New Skill</button>
             )}
           </div>
-        </>
+        </div>
       )}
     </>
   );
