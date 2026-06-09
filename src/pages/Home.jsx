@@ -6,7 +6,7 @@ import ShareModal from "../components/ShareModal";
 
 function ytSrc(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -56,6 +56,7 @@ export default function Home({
   const slideRefs        = useRef([]);
   const iframeRefs       = useRef({});
   const readySet         = useRef(new Set());
+  const thumbOverlayRefs = useRef({});
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
@@ -252,6 +253,7 @@ export default function Home({
 
       if (d.event === "onReady") {
         readySet.current.add(vid);
+        if (thumbOverlayRefs.current[vid]) thumbOverlayRefs.current[vid].style.opacity = '0';
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
           if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
@@ -358,17 +360,31 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <iframe
-                    key={item.videoId}
-                    ref={el => {
-                      if (el) iframeRefs.current[item.videoId] = el;
-                      else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
-                    }}
-                    className="tiktokSlideMedia"
-                    src={ytSrc(item.videoId)}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                  />
+                  <>
+                    <iframe
+                      key={item.videoId}
+                      ref={el => {
+                        if (el) iframeRefs.current[item.videoId] = el;
+                        else {
+                          delete iframeRefs.current[item.videoId];
+                          readySet.current.delete(item.videoId);
+                          delete thumbOverlayRefs.current[item.videoId];
+                        }
+                      }}
+                      className="tiktokSlideMedia"
+                      src={ytSrc(item.videoId)}
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                    <div
+                      ref={el => {
+                        if (el) thumbOverlayRefs.current[item.videoId] = el;
+                        else delete thumbOverlayRefs.current[item.videoId];
+                      }}
+                      className="ytThumbOverlay"
+                      style={{ backgroundImage: `url(https://img.youtube.com/vi/${item.videoId}/maxresdefault.jpg)` }}
+                    />
+                  </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
