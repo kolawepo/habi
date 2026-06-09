@@ -211,20 +211,20 @@ export default function Home({
     };
   }, []); // eslint-disable-line
 
-  // ── Play active, pause previous ────────────────────────────────────────────
+  // ── Play active, pause ALL others ─────────────────────────────────────────
 
   useEffect(() => {
-    const prev = prevIdx.current;
-    if (prev >= 0 && prev !== activeIndex) {
-      const p = feedRef.current[prev];
-      if (p?._type === "youtube") ytCmd(iframeRefs.current[p.videoId], "pauseVideo");
-    }
+    const activeItem = feedRef.current[activeIndex];
     prevIdx.current = activeIndex;
 
-    const item = feedRef.current[activeIndex];
-    if (!item || item._type !== "youtube") return;
-    const f = iframeRefs.current[item.videoId];
-    if (readySet.current.has(item.videoId)) {
+    // Pause every mounted iframe except the active one
+    Object.entries(iframeRefs.current).forEach(([videoId, f]) => {
+      if (videoId !== activeItem?.videoId) ytCmd(f, "pauseVideo");
+    });
+
+    if (!activeItem || activeItem._type !== "youtube") return;
+    const f = iframeRefs.current[activeItem.videoId];
+    if (readySet.current.has(activeItem.videoId)) {
       if (mutedRef.current) ytCmd(f, "mute");
       else { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
       ytCmd(f, "playVideo");
@@ -268,6 +268,12 @@ export default function Home({
       if (d.event === "onStateChange") {
         const ind = pauseIndRefs.current[vid];
         if (d.info === 1) { // playing
+          const active = feedRef.current[activeIdxRef.current];
+          if (active?.videoId !== vid) {
+            // autoplay=1 fired on a non-active iframe — stop it immediately
+            ytCmd(iframeRefs.current[vid], "pauseVideo");
+            return;
+          }
           if (ind) ind.style.display = "none";
         } else if (d.info === 2) { // paused
           if (ind) ind.style.display = "flex";
