@@ -8,7 +8,7 @@ import ShareModal from "../components/ShareModal";
 // mute=1 so the player can autoplay before the user has gestured
 function ytSrc(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -16,7 +16,7 @@ function ytSrc(videoId) {
 // no mute — used after the user has unlocked audio via a tap gesture
 function ytSrcSound(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -63,6 +63,7 @@ export default function Home({
 
   const [muted,         setMuted]         = useState(false);
   const [soundUnlocked, setSoundUnlocked] = useState(!isMobile);
+  const [searchQuery,   setSearchQuery]   = useState("");
 
   const feedEl           = useRef(null);
   const slideRefs        = useRef([]);
@@ -210,16 +211,28 @@ export default function Home({
 
   // ── Feed ──────────────────────────────────────────────────────────────────
 
-  const feed = [
+  const rawFeed = [
     ...allPosts
       .filter(p => p.postType === "tutorial" && p.skill === activeSkill)
       .slice(0, 20)
       .map(p => ({ ...p, _type: "post" })),
     ...(ytBySkill[activeSkill] || []).map(v => ({ ...v, _type: "youtube" })),
   ];
+  const q = searchQuery.trim().toLowerCase();
+  const feed = q
+    ? rawFeed.filter(item =>
+        (item.title || item.caption || "").toLowerCase().includes(q) ||
+        (item.creator || item.username || "").toLowerCase().includes(q)
+      )
+    : rawFeed;
   feedRef.current = feed;
 
-  // ── Reset on skill change ──────────────────────────────────────────────────
+  // ── Reset on skill or search change ───────────────────────────────────────
+
+  useEffect(() => {
+    setActiveIndex(0);
+    feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [searchQuery]); // eslint-disable-line
 
   useEffect(() => {
     setActiveIndex(0);
@@ -361,8 +374,21 @@ export default function Home({
 
   return (
     <>
-      {/* Skill tabs pinned at top */}
+      {/* Fixed overlay header */}
       <div className="feedHeader">
+        {firstName && <p className="feedHeaderTitle">For {firstName}</p>}
+        <div className="feedSearchBar">
+          <span>🔍</span>
+          <input
+            type="text"
+            placeholder={`Search ${activeSkill} videos…`}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="feedSearchClear" onClick={() => setSearchQuery("")}>✕</button>
+          )}
+        </div>
         <div className="feedSkillTabsRow">
           <div className="feedSkillTabs">
             {skills.map(s => (
@@ -405,17 +431,27 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <iframe
-                    key={item.videoId}
-                    ref={el => {
-                      if (el) iframeRefs.current[item.videoId] = el;
-                      else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
-                    }}
-                    className="tiktokSlideMedia"
-                    src={soundUnlocked ? ytSrcSound(item.videoId) : ytSrc(item.videoId)}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                  />
+                  <>
+                    <iframe
+                      key={item.videoId}
+                      ref={el => {
+                        if (el) iframeRefs.current[item.videoId] = el;
+                        else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
+                      }}
+                      className="tiktokSlideMedia"
+                      src={soundUnlocked ? ytSrcSound(item.videoId) : ytSrc(item.videoId)}
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                    <div
+                      className="iframeClickBlocker"
+                      onClick={() => {
+                        const f = iframeRefs.current[item.videoId];
+                        if (isPlayingRef.current) ytCmd(f, "pauseVideo");
+                        else ytCmd(f, "playVideo");
+                      }}
+                    />
+                  </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
