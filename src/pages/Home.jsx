@@ -189,24 +189,27 @@ export default function Home({
   }, []);
 
   // ── First gesture → play active video (handles browsers that block unmuted autoplay) ──
+  // Only mark as fired once a video iframe is actually found and commanded.
+  // This prevents the skills sheet or early taps from consuming the gesture
+  // before the iframe is mounted and ready.
 
   useEffect(() => {
     let fired = false;
     function onGesture() {
       if (fired) return;
-      fired = true;
       const item = feedRef.current[activeIdxRef.current];
-      if (item?._type === "youtube") {
-        const f = iframeRefs.current[item.videoId];
-        if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
-        ytCmd(f, "playVideo");
-      }
+      if (!item || item._type !== "youtube") return;
+      const f = iframeRefs.current[item.videoId];
+      if (!f) return;
+      fired = true;
+      if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+      ytCmd(f, "playVideo");
     }
-    document.addEventListener("touchstart", onGesture, { passive: true });
-    document.addEventListener("click", onGesture);
+    document.addEventListener("touchstart", onGesture, { passive: true, capture: true });
+    document.addEventListener("click", onGesture, { capture: true });
     return () => {
-      document.removeEventListener("touchstart", onGesture);
-      document.removeEventListener("click", onGesture);
+      document.removeEventListener("touchstart", onGesture, { capture: true });
+      document.removeEventListener("click", onGesture, { capture: true });
     };
   }, []); // eslint-disable-line
 
