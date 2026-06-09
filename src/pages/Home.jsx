@@ -69,7 +69,7 @@ function pickStartIdx(skill, feedLen) {
 export default function Home({
   firstName, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
-  friends, onShareToFriend, addMoreSkills,
+  friends, onShareToFriend, addMoreSkills, removeSkill,
 }) {
   const [activeSkill, setActiveSkill] = useState(() => {
     try { return localStorage.getItem(LS_SKILL_KEY) || (skills[0] || ""); }
@@ -81,8 +81,9 @@ export default function Home({
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  const [muted,       setMuted]       = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [muted,           setMuted]           = useState(false);
+  const [searchQuery,     setSearchQuery]     = useState("");
+  const [showSkillsSheet, setShowSkillsSheet] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [vidDuration,   setVidDuration]   = useState(0);
@@ -487,8 +488,8 @@ export default function Home({
               </button>
             ))}
           </div>
-          {addMoreSkills && (
-            <button className="editSkillsBtn" onClick={addMoreSkills}>+ Skills</button>
+          {(addMoreSkills || removeSkill) && (
+            <button className="editSkillsBtn" onClick={() => setShowSkillsSheet(true)}>⚙ Skills</button>
           )}
         </div>
       </div>
@@ -639,6 +640,35 @@ export default function Home({
           onSend={uid => onShareToFriend(uid, shareTarget)}
           onClose={() => setShareTarget(null)}
         />
+      )}
+
+      {showSkillsSheet && (
+        <>
+          <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)} />
+          <div className="skillsSheet">
+            <div className="skillsSheetHandle" />
+            <p className="skillsSheetTitle">My Skills</p>
+            <ul className="skillsSheetList">
+              {skills.map(s => (
+                <li key={s} className="skillsSheetItem">
+                  <span>{skillEmoji(s)} {s}</span>
+                  {skills.length > 1 && removeSkill && (
+                    <button
+                      className="skillsSheetRemoveBtn"
+                      onClick={() => { removeSkill(s); if (skills.length <= 2) setShowSkillsSheet(false); }}
+                    >✕</button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {addMoreSkills && (
+              <button
+                className="skillsSheetAddBtn"
+                onClick={() => { setShowSkillsSheet(false); addMoreSkills(); }}
+              >+ Add New Skill</button>
+            )}
+          </div>
+        </>
       )}
     </>
   );
