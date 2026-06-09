@@ -26,6 +26,7 @@ function loadCache(skill) {
   try {
     const { videos, ts } = JSON.parse(localStorage.getItem(`yt_${skill}`) || "{}");
     if (!videos?.length || Date.now() - ts > TTL) { localStorage.removeItem(`yt_${skill}`); return null; }
+    console.log(`[YT] Cache hit for "${skill}": ${videos.length} videos`);
     return videos;
   } catch { return null; }
 }
@@ -34,17 +35,6 @@ function saveCache(skill, videos) {
   try { localStorage.setItem(`yt_${skill}`, JSON.stringify({ videos, ts: Date.now() })); } catch {}
 }
 
-async function checkEmbeddable(videoId) {
-  try {
-    const c = new AbortController();
-    setTimeout(() => c.abort(), 4000);
-    const r = await fetch(
-      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
-      { signal: c.signal }
-    );
-    return r.ok;
-  } catch { return false; }
-}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -87,9 +77,13 @@ export default function Home({
     if (memCache.current[skill]?.length) return memCache.current[skill];
     const hit = loadCache(skill);
     if (hit) { memCache.current[skill] = hit; return hit; }
-    if (!YT_KEY) return [];
+
+    console.log("[YT] API key present?", !!YT_KEY, "| key prefix:", YT_KEY?.slice(0, 8));
+    if (!YT_KEY) { console.warn("[YT] No API key — VITE_YOUTUBE_API_KEY not set"); return []; }
 
     const q = encodeURIComponent(skill + " tutorial how to beginner");
+    console.log(`[YT] Fetching for skill: "${skill}", query: "${decodeURIComponent(q)}"`);
+
     const confirmed = []; const seen = new Set();
     let pageToken = null; let fetched = 0;
 
@@ -102,8 +96,18 @@ export default function Home({
         `&maxResults=${size}&q=${q}&key=${YT_KEY}`;
       if (pageToken) url += `&pageToken=${pageToken}`;
 
-      const data = await fetch(url).then(r => r.json());
-      if (data.error || cx.current) break;
+      let data;
+      try {
+        const res = await fetch(url);
+        data = await res.json();
+        console.log("[YT] Search response status:", res.status, "| items:", data.items?.length ?? 0, "| error:", data.error ?? null);
+      } catch (err) {
+        console.error("[YT] Search fetch threw (CORS?):", err);
+        break;
+      }
+
+      if (data.error) { console.error("[YT] API error:", data.error); break; }
+      if (cx.current) break;
       pageToken = data.nextPageToken || null;
 
       const batch = (data.items || [])
@@ -114,23 +118,35 @@ export default function Home({
           thumbnail: i.snippet.thumbnails?.high?.url || i.snippet.thumbnails?.medium?.url,
         }; });
       fetched += batch.length;
+      console.log(`[YT] Batch: ${batch.length} videos (total fetched so far: ${fetched})`);
       if (!batch.length) break;
 
-      const stats = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${batch.map(v => v.videoId).join(",")}&key=${YT_KEY}`
-      ).then(r => r.json());
+      let stats;
+      try {
+        const sres = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${batch.map(v => v.videoId).join(",")}&key=${YT_KEY}`
+        );
+        stats = await sres.json();
+        console.log("[YT] Stats response status:", sres.status, "| items:", stats.items?.length ?? 0, "| error:", stats.error ?? null);
+      } catch (err) {
+        console.error("[YT] Stats fetch threw:", err);
+        break;
+      }
+
       const views = Object.fromEntries(
         (stats.items || []).map(i => [i.id, parseInt(i.statistics?.viewCount || "0", 10)])
       );
       const popular = batch.filter(v => (views[v.videoId] || 0) >= 1000);
+      console.log(`[YT] After views filter (>=1000): ${popular.length} / ${batch.length} passed`);
 
       if (cx.current) return null;
-      const ok = await Promise.all(popular.map(v => checkEmbeddable(v.videoId)));
-      confirmed.push(...popular.filter((_, i) => ok[i]));
+      confirmed.push(...popular);
+      console.log(`[YT] Confirmed so far: ${confirmed.length}`);
       if (!pageToken) break;
     }
 
     if (cx.current) return null;
+    console.log(`[YT] Final result for "${skill}": ${confirmed.length} videos`);
     if (confirmed.length) { memCache.current[skill] = confirmed; saveCache(skill, confirmed); }
     return confirmed;
   }
@@ -144,8 +160,12 @@ export default function Home({
     const cx = { current: false };
     setLoading(true);
     fetchSkill(activeSkill, cx)
-      .then(v => { if (!cx.current && v?.length) setYtBySkill(p => ({ ...p, [activeSkill]: v })); })
-      .catch(() => {})
+      .then(v => {
+        console.log(`[YT] Skill "${activeSkill}" load complete:`, v?.length ?? 0, "videos");
+        if (!cx.current && v?.length) setYtBySkill(p => ({ ...p, [activeSkill]: v }));
+        else if (!v?.length) console.warn(`[YT] No videos returned for "${activeSkill}"`);
+      })
+      .catch(err => console.error("[YT] fetchSkill threw:", err))
       .finally(() => { if (!cx.current) setLoading(false); });
     return () => { cx.current = true; };
   }, [activeSkill, YT_KEY]); // eslint-disable-line
