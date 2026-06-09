@@ -8,7 +8,7 @@ import ShareModal from "../components/ShareModal";
 // mute=1 so the player can autoplay before the user has gestured
 function ytSrc(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -16,7 +16,7 @@ function ytSrc(videoId) {
 // no mute — used after the user has unlocked audio via a tap gesture
 function ytSrcSound(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -74,31 +74,13 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const pauseIndRefs      = useRef({});
-  const isPlayingRef      = useRef(false);
   const isDraggingRef     = useRef(false);
-  const tapTimerRef       = useRef(null);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
 
   const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 
-  // ── Tap to pause / play ────────────────────────────────────────────────────
-
-  function handleVideoTap(videoId) {
-    const f   = iframeRefs.current[videoId];
-    const ind = pauseIndRefs.current[videoId];
-    if (isPlayingRef.current) {
-      ytCmd(f, "pauseVideo");
-      if (ind) { ind.textContent = "⏸"; ind.style.display = "flex"; }
-    } else {
-      ytCmd(f, "playVideo");
-      if (ind) { ind.textContent = "▶"; ind.style.display = "flex"; }
-      clearTimeout(tapTimerRef.current);
-      tapTimerRef.current = setTimeout(() => { if (ind) ind.style.display = "none"; }, 700);
-    }
-  }
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -239,7 +221,6 @@ export default function Home({
   //  where the iframe was pre-mounted from a previous render cycle)
 
   useEffect(() => {
-    isPlayingRef.current = false;
     setVidCurrentTime(0);
     setVidDuration(0);
     const item = feedRef.current[activeIndex];
@@ -290,16 +271,6 @@ export default function Home({
           setVidCurrentTime(d.info.currentTime);
       }
 
-      if (d.event === "onStateChange") {
-        const ind = pauseIndRefs.current[vid];
-        if (d.info === 1) {                    // playing
-          if (ind) ind.style.display = "none";
-          isPlayingRef.current = true;
-        } else if (d.info === 2) {             // paused
-          if (ind) { ind.textContent = "⏸"; ind.style.display = "flex"; }
-          isPlayingRef.current = false;
-        }
-      }
     }
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
@@ -404,23 +375,17 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <>
-                    <iframe
-                      key={item.videoId}
-                      ref={el => {
-                        if (el) iframeRefs.current[item.videoId] = el;
-                        else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
-                      }}
-                      className="tiktokSlideMedia"
-                      src={soundUnlocked ? ytSrcSound(item.videoId) : ytSrc(item.videoId)}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                    />
-                    <div
-                      className="iframeClickBlocker"
-                      onClick={() => handleVideoTap(item.videoId)}
-                    />
-                  </>
+                  <iframe
+                    key={item.videoId}
+                    ref={el => {
+                      if (el) iframeRefs.current[item.videoId] = el;
+                      else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
+                    }}
+                    className="tiktokSlideMedia"
+                    src={soundUnlocked ? ytSrcSound(item.videoId) : ytSrc(item.videoId)}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  />
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
@@ -428,14 +393,6 @@ export default function Home({
                 <video src={item.mediaUrl} className="tiktokSlideMedia" loop muted playsInline autoPlay />
               ) : (
                 <img src={item.mediaUrl} className="tiktokSlideMedia" alt={item.caption} />
-              )}
-
-              {isYt && !isFailed && isActive && (
-                <div
-                  className="pausedPlayIndicator"
-                  ref={el => { if (el) pauseIndRefs.current[item.videoId] = el; else delete pauseIndRefs.current[item.videoId]; }}
-                  style={{ display: "none", pointerEvents: "none" }}
-                />
               )}
 
               {isYt && !isFailed && isActive && (

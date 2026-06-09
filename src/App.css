@@ -863,13 +863,6 @@ textarea {
   line-height: 1;
 }
 
-.iframeClickBlocker {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  cursor: pointer;
-}
-
 .ytSeekBar {
   position: absolute;
   bottom: 96px;
