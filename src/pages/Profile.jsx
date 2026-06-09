@@ -26,6 +26,8 @@ export default function Profile({
   username,
   skills,
   onSignOut,
+  darkMode,
+  toggleDarkMode,
   myPosts,
   handleDeletePost,
   likedVideos,
@@ -424,6 +426,13 @@ async function changeUsername() {
 
         <button onClick={() => setShowSettings(false)}>
           ✕
+        </button>
+      </div>
+
+      <div className="themeToggleRow">
+        <span>{darkMode ? "Dark mode" : "Light mode"}</span>
+        <button className="themeToggleBtn" onClick={toggleDarkMode}>
+          {darkMode ? "☀️" : "🌙"}
         </button>
       </div>
 

@@ -54,6 +54,7 @@ export default function App() {
   const [screen, setScreen] = useState("splash");
   const [authChecked, setAuthChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("habi_darkMode") === "true");
 
   const [tab, setTab] = useState("home");
 
@@ -119,6 +120,20 @@ useEffect(() => {
   });
 }, [savedVideos, currentUser]);
 
+// Apply dark/light theme to <html>
+useEffect(() => {
+  document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+  localStorage.setItem("habi_darkMode", darkMode);
+}, [darkMode]);
+
+function toggleDarkMode() {
+  const next = !darkMode;
+  setDarkMode(next);
+  if (currentUser) {
+    updateDoc(doc(db, "users", currentUser.uid), { darkMode: next }).catch(() => {});
+  }
+}
+
 // Presence: stamp lastSeen on open and every time the tab comes back to foreground
 useEffect(() => {
   if (!currentUser) return;
@@ -172,6 +187,7 @@ const [streak, setStreak] = useState(0);
             setFriendRequests(userData.friendRequests || []);
             setLikedVideos(userData.likedVideos || []);
             setSavedVideos(userData.savedVideos || []);
+            if (userData.darkMode !== undefined) setDarkMode(userData.darkMode);
 
             setScreen("main");
           } else {
@@ -886,6 +902,8 @@ async function handleRemoveFriend
           allPosts={posts}
           notifications={notifications}
           onShareToFriend={handleSendDM}
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
           />
       )}
     </div>

@@ -1,4 +1,32 @@
 /* =========================
+   THEME VARIABLES
+========================= */
+
+:root {
+  --bg:          #f0ece8;
+  --card-bg:     #ffffff;
+  --text:        #1f1f1f;
+  --text-2:      #444;
+  --text-muted:  #888;
+  --surface:     #f3f3f3;
+  --surface-2:   #f6f1ee;
+  --border:      #eee;
+  --input-bg:    #f3f3f3;
+}
+
+[data-theme="dark"] {
+  --bg:          #0f0f0f;
+  --card-bg:     #1c1c1e;
+  --text:        #f5f5f5;
+  --text-2:      #ccc;
+  --text-muted:  #8e8e8e;
+  --surface:     #2c2c2e;
+  --surface-2:   #3a3a3c;
+  --border:      #3a3a3c;
+  --input-bg:    #2c2c2e;
+}
+
+/* =========================
    GLOBAL
 ========================= */
 
@@ -11,7 +39,7 @@
 
 body {
   margin: 0;
-  color: #1f1f1f;
+  color: var(--text);
 }
 
 button {
@@ -31,7 +59,7 @@ textarea {
 .appShell {
   width: 100%;
   min-height: 100vh;
-  background: #f0ece8;
+  background: var(--bg);
   overflow-x: hidden;
   position: relative;
 }
@@ -1554,7 +1582,7 @@ textarea::placeholder {
 ========================= */
 
 .profileCard {
-  background: white;
+  background: var(--card-bg);
   border-radius: 36px;
   padding: 30px;
   text-align: center;
@@ -1619,7 +1647,7 @@ textarea::placeholder {
 
 .uploadsCard {
   margin-top: 24px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 36px;
   padding: 24px;
   margin-bottom: 140px;
@@ -1691,11 +1719,11 @@ textarea::placeholder {
   left: 0;
   right: 0;
   height: 96px;
-  background: white;
+  background: var(--card-bg);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
   z-index: 999;
 }
 
@@ -2841,7 +2869,7 @@ textarea::placeholder {
 .settingsSheet {
   width: 100%;
   max-width: 520px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 34px 34px 0 0;
   padding: 24px;
 }
@@ -4294,4 +4322,64 @@ textarea::placeholder {
   background: linear-gradient(90deg, #ff9950, #ff5f87);
   color: white;
   font-weight: 900;
+}
+
+/* =========================
+   DARK MODE OVERRIDES
+========================= */
+
+[data-theme="dark"] .profileUsername   { color: var(--text-2); }
+[data-theme="dark"] .profileSkills     { color: var(--text); }
+[data-theme="dark"] .uploadsTitle      { color: var(--text); }
+[data-theme="dark"] .profileStats span { color: var(--text-muted); }
+
+[data-theme="dark"] .settingsHeader h2         { color: var(--text); }
+[data-theme="dark"] .settingsHeader button     { background: var(--surface-2); color: var(--text); }
+[data-theme="dark"] .usernameChangeBox input   { background: var(--surface); color: var(--text); }
+[data-theme="dark"] .settingsSignOutButton     { background: rgba(233,84,67,0.15); }
+
+[data-theme="dark"] .bottomNav button          { color: var(--text-muted); }
+
+[data-theme="dark"] .friendResultCard          { background: var(--surface); }
+[data-theme="dark"] .friendResultCard h2,
+[data-theme="dark"] .friendResultCard p        { color: var(--text); }
+[data-theme="dark"] .friendListSection h3,
+[data-theme="dark"] .friendRequestsSection h3  { color: var(--text); }
+[data-theme="dark"] .removeFriendButton        { background: rgba(233,84,67,0.15); }
+
+[data-theme="dark"] .theirMessage              { background: var(--surface); color: var(--text); }
+
+[data-theme="dark"] .commentInputBar input     { background: var(--surface); color: var(--text); }
+[data-theme="dark"] .replyBubble               { background: var(--surface-2); }
+[data-theme="dark"] .replyBubble p             { color: var(--text); }
+
+[data-theme="dark"] .uploadItemCard            { background: var(--surface); }
+
+[data-theme="dark"] .dmInputBar input          { background: var(--surface); color: var(--text); }
+
+[data-theme="dark"] .feedEmptyState            { background: var(--bg); color: var(--text); }
+
+/* Theme toggle button in settings */
+.themeToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.themeToggleRow span {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.themeToggleBtn {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
 }

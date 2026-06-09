@@ -26,6 +26,8 @@ export default function MainApp({
   addMoreSkills,
   removeSkill,
   onSignOut,
+  darkMode,
+  toggleDarkMode,
   friendPosts,
   friends,
   handleSendFriendRequest,
@@ -111,6 +113,8 @@ export default function MainApp({
             likedVideos={likedVideos}
             savedVideos={savedVideos}
             onSignOut={onSignOut}
+            darkMode={darkMode}
+            toggleDarkMode={toggleDarkMode}
             myPosts={myPosts}
             handleDeletePost={handleDeletePost}
             profilePhotoUrl={profilePhotoUrl}
