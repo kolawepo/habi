@@ -6,7 +6,7 @@ import ShareModal from "../components/ShareModal";
 
 function ytSrc(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -187,25 +187,30 @@ export default function Home({
     return () => obsRef.current?.disconnect();
   }, []);
 
-  // ── First gesture → play active video (handles browsers that block unmuted autoplay) ──
+  // ── First gesture → unmute active video ──────────────────────────────────────
+  // mute=1 in the URL lets the player autoplay on mobile (browsers block unmuted
+  // autoplay). The first swipe/tap in gesture context unlocks audio. We only mark
+  // the gesture as consumed once we have a live iframe — early taps before the
+  // iframe mounts don't waste the unlock. capture:true fires before any
+  // stopPropagation inside child elements.
 
   useEffect(() => {
-    let fired = false;
-    function onGesture() {
-      if (fired) return;
-      fired = true;
+    let audioUnlocked = false;
+    function unlockAudio() {
+      if (audioUnlocked) return;
       const item = feedRef.current[activeIdxRef.current];
-      if (item?._type === "youtube") {
-        const f = iframeRefs.current[item.videoId];
-        if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
-        ytCmd(f, "playVideo");
-      }
+      if (!item || item._type !== "youtube") return;
+      const f = iframeRefs.current[item.videoId];
+      if (!f) return;
+      audioUnlocked = true;
+      if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+      ytCmd(f, "playVideo");
     }
-    document.addEventListener("touchstart", onGesture, { passive: true });
-    document.addEventListener("click", onGesture);
+    document.addEventListener("touchstart", unlockAudio, { passive: true, capture: true });
+    document.addEventListener("click", unlockAudio, { capture: true });
     return () => {
-      document.removeEventListener("touchstart", onGesture);
-      document.removeEventListener("click", onGesture);
+      document.removeEventListener("touchstart", unlockAudio, { capture: true });
+      document.removeEventListener("click", unlockAudio, { capture: true });
     };
   }, []); // eslint-disable-line
 
