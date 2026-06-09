@@ -6,7 +6,7 @@ import ShareModal from "../components/ShareModal";
 
 function ytSrc(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -49,11 +49,7 @@ export default function Home({
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  // Always start muted so the browser allows autoplay on every page load.
-  // First tap flips muted→false, which changes every iframe's key and remounts
-  // them without mute=1 — the browser allows unmuted autoplay because a gesture
-  // just happened. All future videos in the feed load without mute=1 too.
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
 
   const feedEl           = useRef(null);
   const slideRefs        = useRef([]);
@@ -193,19 +189,19 @@ export default function Home({
     return () => obsRef.current?.disconnect();
   }, []);
 
-  // ── First tap anywhere → unmute ────────────────────────────────────────────
+  // ── First gesture → play active video (handles browsers that block unmuted autoplay) ──
 
   useEffect(() => {
-    if (!mutedRef.current) return;
     let fired = false;
     function onGesture() {
       if (fired) return;
       fired = true;
-      Object.values(iframeRefs.current).forEach(f => {
-        ytCmd(f, "unMute");
-        ytCmd(f, "setVolume", [100]);
-      });
-      setMuted(false);
+      const item = feedRef.current[activeIdxRef.current];
+      if (item?._type === "youtube") {
+        const f = iframeRefs.current[item.videoId];
+        if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+        ytCmd(f, "playVideo");
+      }
     }
     document.addEventListener("touchstart", onGesture, { passive: true });
     document.addEventListener("click", onGesture);
@@ -229,7 +225,8 @@ export default function Home({
     if (!item || item._type !== "youtube") return;
     const f = iframeRefs.current[item.videoId];
     if (readySet.current.has(item.videoId)) {
-      if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+      if (mutedRef.current) ytCmd(f, "mute");
+      else { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
       ytCmd(f, "playVideo");
     }
   }, [activeIndex]); // eslint-disable-line
@@ -260,7 +257,8 @@ export default function Home({
         readySet.current.add(vid);
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
-          if (!mutedRef.current) { ytCmd(iframeRefs.current[vid], "unMute"); ytCmd(iframeRefs.current[vid], "setVolume", [100]); }
+          if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
+          else { ytCmd(iframeRefs.current[vid], "unMute"); ytCmd(iframeRefs.current[vid], "setVolume", [100]); }
           ytCmd(iframeRefs.current[vid], "playVideo");
         } else {
           ytCmd(iframeRefs.current[vid], "pauseVideo");
@@ -271,11 +269,6 @@ export default function Home({
         const ind = pauseIndRefs.current[vid];
         if (d.info === 1) { // playing
           if (ind) ind.style.display = "none";
-          const active = feedRef.current[activeIdxRef.current];
-          if (active?._type === "youtube" && active.videoId === vid && !mutedRef.current) {
-            ytCmd(iframeRefs.current[vid], "unMute");
-            ytCmd(iframeRefs.current[vid], "setVolume", [100]);
-          }
         } else if (d.info === 2) { // paused
           if (ind) ind.style.display = "flex";
         }
@@ -459,7 +452,7 @@ export default function Home({
                   </>
                 )}
                 <button className="tiktokActionBtn" onClick={toggleMute}>
-                  {muted ? "🔇" : "🔊"}
+                  {muted ? "🔊" : "🔇"}
                 </button>
               </div>
             </div>
