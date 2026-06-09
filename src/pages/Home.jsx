@@ -57,7 +57,6 @@ export default function Home({
   const readySet         = useRef(new Set());
   const obsRef           = useRef(null);
   const memCache         = useRef({});
-  const prevIdx          = useRef(-1);
   const feedRef          = useRef([]);
   const pauseIndRefs     = useRef({});  // videoId → DOM element for pause indicator
 
@@ -172,7 +171,6 @@ export default function Home({
 
   useEffect(() => {
     setActiveIndex(0);
-    prevIdx.current = -1;
     feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [activeSkill]);
 
@@ -211,20 +209,15 @@ export default function Home({
     };
   }, []); // eslint-disable-line
 
-  // ── Play active, pause ALL others ─────────────────────────────────────────
+  // ── When active index changes, play it if the iframe is already ready ─────
+  // (usually onReady fires after mount and handles it; this covers fast swipes
+  //  where the iframe was pre-mounted from a previous render cycle)
 
   useEffect(() => {
-    const activeItem = feedRef.current[activeIndex];
-    prevIdx.current = activeIndex;
-
-    // Pause every mounted iframe except the active one
-    Object.entries(iframeRefs.current).forEach(([videoId, f]) => {
-      if (videoId !== activeItem?.videoId) ytCmd(f, "pauseVideo");
-    });
-
-    if (!activeItem || activeItem._type !== "youtube") return;
-    const f = iframeRefs.current[activeItem.videoId];
-    if (readySet.current.has(activeItem.videoId)) {
+    const item = feedRef.current[activeIndex];
+    if (!item || item._type !== "youtube") return;
+    const f = iframeRefs.current[item.videoId];
+    if (f && readySet.current.has(item.videoId)) {
       if (mutedRef.current) ytCmd(f, "mute");
       else { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
       ytCmd(f, "playVideo");
@@ -267,17 +260,8 @@ export default function Home({
 
       if (d.event === "onStateChange") {
         const ind = pauseIndRefs.current[vid];
-        if (d.info === 1) { // playing
-          const active = feedRef.current[activeIdxRef.current];
-          if (active?.videoId !== vid) {
-            // autoplay=1 fired on a non-active iframe — stop it immediately
-            ytCmd(iframeRefs.current[vid], "pauseVideo");
-            return;
-          }
-          if (ind) ind.style.display = "none";
-        } else if (d.info === 2) { // paused
-          if (ind) ind.style.display = "flex";
-        }
+        if (d.info === 1 && ind) ind.style.display = "none";       // playing
+        else if (d.info === 2 && ind) ind.style.display = "flex";  // paused
       }
     }
     window.addEventListener("message", onMsg);
@@ -351,8 +335,7 @@ export default function Home({
         {feed.map((item, idx) => {
           const isYt     = item._type === "youtube";
           const isFailed = isYt && failed.has(item.videoId);
-          const inWindow = idx >= activeIndex - 1 && idx <= activeIndex + 1;
-          const iframeKey = item.videoId;
+          const isActive = idx === activeIndex;
 
           return (
             <div
@@ -370,9 +353,9 @@ export default function Home({
               {isYt ? (
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
-                ) : inWindow ? (
+                ) : isActive ? (
                   <iframe
-                    key={iframeKey}
+                    key={item.videoId}
                     ref={el => {
                       if (el) iframeRefs.current[item.videoId] = el;
                       else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
@@ -391,7 +374,7 @@ export default function Home({
                 <img src={item.mediaUrl} className="tiktokSlideMedia" alt={item.caption} />
               )}
 
-              {isYt && !isFailed && inWindow && (
+              {isYt && !isFailed && isActive && (
                 <div
                   className="pausedPlayIndicator"
                   ref={el => { if (el) pauseIndRefs.current[item.videoId] = el; else delete pauseIndRefs.current[item.videoId]; }}
