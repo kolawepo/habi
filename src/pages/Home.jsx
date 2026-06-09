@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { flushSync } from "react-dom";
 import { skillEmoji } from "../utils/emojis";
 import ShareModal from "../components/ShareModal";
 
@@ -13,15 +12,12 @@ function ytSrc(videoId) {
   );
 }
 
-// no mute — used after the user has unlocked audio via a tap gesture
 function ytSrcSound(videoId) {
   return (
     `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
-
-const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
 function ytCmd(iframe, fn, args = []) {
   iframe?.contentWindow?.postMessage(
@@ -61,9 +57,8 @@ export default function Home({
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  const [muted,         setMuted]         = useState(false);
-  const [soundUnlocked, setSoundUnlocked] = useState(!isMobile);
-  const [searchQuery,   setSearchQuery]   = useState("");
+  const [muted,       setMuted]       = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [vidDuration,   setVidDuration]   = useState(0);
@@ -176,19 +171,8 @@ export default function Home({
         }; });
       fetched += batch.length;
       if (!batch.length) break;
-
-      let stats;
-      try {
-        stats = await fetch(
-          `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${batch.map(v => v.videoId).join(",")}&key=${YT_KEY}`
-        ).then(r => r.json());
-      } catch { break; }
-
-      const views = Object.fromEntries(
-        (stats.items || []).map(i => [i.id, parseInt(i.statistics?.viewCount || "0", 10)])
-      );
       if (cx.current) return null;
-      confirmed.push(...batch.filter(v => (views[v.videoId] || 0) >= 1000));
+      confirmed.push(...batch);
       if (!pageToken) break;
     }
     if (cx.current) return null;
@@ -373,25 +357,19 @@ export default function Home({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  if (feed.length === 0) {
-    return (
-      <div className="feedEmptyState">
-        {!skills.length
-          ? "Add skills to see videos"
-          : searchLoading
-            ? "Searching…"
-            : trimmedSearch
-              ? `No results for "${trimmedSearch}"`
-              : loading
-                ? "Loading…"
-                : `No ${activeSkill} videos yet.`}
-      </div>
-    );
-  }
+  const emptyMsg = !skills.length
+    ? "Add skills to see videos"
+    : searchLoading
+      ? "Searching…"
+      : trimmedSearch
+        ? `No results for "${trimmedSearch}"`
+        : loading
+          ? "Loading…"
+          : `No ${activeSkill} videos yet.`;
 
   return (
     <>
-      {/* Fixed overlay header */}
+      {/* Fixed overlay header — always rendered so search bar stays visible */}
       <div className="feedHeader">
         {firstName && <p className="feedHeaderTitle">For {firstName}</p>}
         <div className="feedSearchBar">
@@ -424,7 +402,10 @@ export default function Home({
         </div>
       </div>
 
-      {/* Full-screen snap feed */}
+      {feed.length === 0 ? (
+        <div className="feedEmptyState">{emptyMsg}</div>
+      ) : (
+      /* Full-screen snap feed */
       <div className="tiktokFeed" ref={feedEl}>
         {feed.map((item, idx) => {
           const isYt     = item._type === "youtube";
@@ -448,17 +429,20 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <iframe
-                    key={item.videoId}
-                    ref={el => {
-                      if (el) iframeRefs.current[item.videoId] = el;
-                      else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
-                    }}
-                    className="tiktokSlideMedia"
-                    src={soundUnlocked ? ytSrcSound(item.videoId) : ytSrc(item.videoId)}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                  />
+                  <>
+                    <iframe
+                      key={item.videoId}
+                      ref={el => {
+                        if (el) iframeRefs.current[item.videoId] = el;
+                        else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
+                      }}
+                      className="tiktokSlideMedia"
+                      src={ytSrcSound(item.videoId)}
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                    <div style={{ position: "absolute", inset: 0, zIndex: 1, touchAction: "pan-y" }} />
+                  </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
@@ -550,14 +534,6 @@ export default function Home({
           );
         })}
       </div>
-
-      {!soundUnlocked && feed[activeIndex]?._type === "youtube" && !failed.has(feed[activeIndex]?.videoId) && (
-        <button
-          className="tapForSoundBtn"
-          onClick={() => flushSync(() => setSoundUnlocked(true))}
-        >
-          Tap for sound 🔊
-        </button>
       )}
 
       {shareTarget && (
