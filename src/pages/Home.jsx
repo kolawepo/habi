@@ -209,8 +209,7 @@ export default function Home({
     if (!item || item._type !== "youtube") return;
     const f = iframeRefs.current[item.videoId];
     if (f && readySet.current.has(item.videoId)) {
-      if (mutedRef.current || !soundUnlockedRef.current) ytCmd(f, "mute");
-      else { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+      if (mutedRef.current) ytCmd(f, "mute");
       ytCmd(f, "playVideo");
     }
   }, [activeIndex]); // eslint-disable-line
@@ -241,8 +240,7 @@ export default function Home({
         readySet.current.add(vid);
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
-          if (mutedRef.current || !soundUnlockedRef.current) ytCmd(iframeRefs.current[vid], "mute");
-          else { ytCmd(iframeRefs.current[vid], "unMute"); ytCmd(iframeRefs.current[vid], "setVolume", [100]); }
+          if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
           ytCmd(iframeRefs.current[vid], "playVideo");
         } else {
           ytCmd(iframeRefs.current[vid], "pauseVideo");
@@ -375,21 +373,6 @@ export default function Home({
                 </div>
               )}
 
-              {isYt && !isFailed && isActive && !soundUnlocked && (
-                <button
-                  className="tapForSoundBtn"
-                  onClick={e => {
-                    e.stopPropagation();
-                    // flushSync forces React to synchronously re-render and update
-                    // the iframe src (removing mute=1) before this click handler
-                    // returns, keeping the src change inside iOS Safari's gesture
-                    // window so the browser allows audio.
-                    flushSync(() => setSoundUnlocked(true));
-                  }}
-                >
-                  Tap for sound 🔊
-                </button>
-              )}
 
               <div className="tiktokGradient" />
               <div className="tiktokTopGradient" />
@@ -455,6 +438,15 @@ export default function Home({
           );
         })}
       </div>
+
+      {!soundUnlocked && feed[activeIndex]?._type === "youtube" && !failed.has(feed[activeIndex]?.videoId) && (
+        <button
+          className="tapForSoundBtn"
+          onClick={() => flushSync(() => setSoundUnlocked(true))}
+        >
+          Tap for sound 🔊
+        </button>
+      )}
 
       {shareTarget && (
         <ShareModal
