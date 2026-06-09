@@ -72,10 +72,8 @@ export default function Home({
   friends, onShareToFriend, addMoreSkills,
 }) {
   const [activeSkill, setActiveSkill] = useState(() => {
-    try {
-      const saved = localStorage.getItem(LS_SKILL_KEY);
-      return (saved && skills.includes(saved)) ? saved : (skills[0] || "");
-    } catch { return skills[0] || ""; }
+    try { return localStorage.getItem(LS_SKILL_KEY) || (skills[0] || ""); }
+    catch { return skills[0] || ""; }
   });
   const [ytBySkill,   setYtBySkill]   = useState({});
   const [loading,     setLoading]     = useState(false);
@@ -233,7 +231,10 @@ export default function Home({
   }, [skills, YT_KEY]); // eslint-disable-line
 
   useEffect(() => {
-    if (skills.length && !skills.includes(activeSkill)) setActiveSkill(skills[0]);
+    if (skills.length && !skills.includes(activeSkill)) {
+      const saved = localStorage.getItem(LS_SKILL_KEY);
+      setActiveSkill((saved && skills.includes(saved)) ? saved : skills[0]);
+    }
   }, [skills]); // eslint-disable-line
 
   // Search: fetch YouTube results for the typed query (debounced 500 ms)
