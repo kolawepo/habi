@@ -21,6 +21,8 @@ function ytSrcSound(videoId) {
   );
 }
 
+const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+
 function ytCmd(iframe, fn, args = []) {
   iframe?.contentWindow?.postMessage(
     JSON.stringify({ event: "command", func: fn, args }),
@@ -60,9 +62,7 @@ export default function Home({
   const [shareTarget, setShareTarget] = useState(null);
 
   const [muted,         setMuted]         = useState(false);
-  const [soundUnlocked, setSoundUnlocked] = useState(false);
-
-  const soundUnlockedRef = useRef(false); soundUnlockedRef.current = soundUnlocked;
+  const [soundUnlocked, setSoundUnlocked] = useState(!isMobile);
 
   const feedEl           = useRef(null);
   const slideRefs        = useRef([]);
