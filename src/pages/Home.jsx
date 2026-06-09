@@ -64,6 +64,8 @@ export default function Home({
   const [muted,         setMuted]         = useState(false);
   const [soundUnlocked, setSoundUnlocked] = useState(!isMobile);
   const [searchQuery,   setSearchQuery]   = useState("");
+  const [vidDuration,   setVidDuration]   = useState(0);
+  const [vidCurrentTime,setVidCurrentTime]= useState(0);
 
   const feedEl           = useRef(null);
   const slideRefs        = useRef([]);
@@ -72,50 +74,30 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const pauseIndRefs     = useRef({});  // videoId → DOM element for pause indicator
-  const progressBarRef   = useRef(null);
-  const progressFillRef  = useRef(null);
-  const durationRef      = useRef(0);
-  const currentTimeRef   = useRef(0);
-  const lastUpdateRef    = useRef(0);
-  const isPlayingRef     = useRef(false);
-  const animFrameRef     = useRef(null);
+  const pauseIndRefs      = useRef({});
+  const isPlayingRef      = useRef(false);
+  const isDraggingRef     = useRef(false);
+  const tapTimerRef       = useRef(null);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
 
   const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 
-  // ── Progress helpers ───────────────────────────────────────────────────────
+  // ── Tap to pause / play ────────────────────────────────────────────────────
 
-  function startProgressLoop() {
-    if (animFrameRef.current) return;
-    function tick() {
-      if (!isPlayingRef.current) { animFrameRef.current = null; return; }
-      if (durationRef.current > 0 && progressFillRef.current) {
-        const elapsed = (Date.now() - lastUpdateRef.current) / 1000;
-        const t = Math.min(durationRef.current, currentTimeRef.current + elapsed);
-        progressFillRef.current.style.width = `${(t / durationRef.current) * 100}%`;
-      }
-      animFrameRef.current = requestAnimationFrame(tick);
+  function handleVideoTap(videoId) {
+    const f   = iframeRefs.current[videoId];
+    const ind = pauseIndRefs.current[videoId];
+    if (isPlayingRef.current) {
+      ytCmd(f, "pauseVideo");
+      if (ind) { ind.textContent = "⏸"; ind.style.display = "flex"; }
+    } else {
+      ytCmd(f, "playVideo");
+      if (ind) { ind.textContent = "▶"; ind.style.display = "flex"; }
+      clearTimeout(tapTimerRef.current);
+      tapTimerRef.current = setTimeout(() => { if (ind) ind.style.display = "none"; }, 700);
     }
-    animFrameRef.current = requestAnimationFrame(tick);
-  }
-
-  function stopProgressLoop() {
-    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
-  }
-
-  function seekToPosition(clientX) {
-    if (!progressBarRef.current || durationRef.current <= 0) return;
-    const rect = progressBarRef.current.getBoundingClientRect();
-    const frac = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const t = frac * durationRef.current;
-    const item = feedRef.current[activeIdxRef.current];
-    if (item?._type === "youtube") ytCmd(iframeRefs.current[item.videoId], "seekTo", [t, true]);
-    currentTimeRef.current = t;
-    lastUpdateRef.current  = Date.now();
-    if (progressFillRef.current) progressFillRef.current.style.width = `${frac * 100}%`;
   }
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -257,12 +239,9 @@ export default function Home({
   //  where the iframe was pre-mounted from a previous render cycle)
 
   useEffect(() => {
-    stopProgressLoop();
-    isPlayingRef.current  = false;
-    currentTimeRef.current = 0;
-    lastUpdateRef.current  = 0;
-    durationRef.current    = 0;
-    if (progressFillRef.current) progressFillRef.current.style.width = '0%';
+    isPlayingRef.current = false;
+    setVidCurrentTime(0);
+    setVidDuration(0);
     const item = feedRef.current[activeIndex];
     if (!item || item._type !== "youtube") return;
     const f = iframeRefs.current[item.videoId];
@@ -306,11 +285,9 @@ export default function Home({
       }
 
       if (d.event === "infoDelivery" && d.info) {
-        if (d.info.duration)          durationRef.current    = d.info.duration;
-        if (d.info.currentTime != null) {
-          currentTimeRef.current = d.info.currentTime;
-          lastUpdateRef.current  = Date.now();
-        }
+        if (d.info.duration)              setVidDuration(d.info.duration);
+        if (d.info.currentTime != null && !isDraggingRef.current)
+          setVidCurrentTime(d.info.currentTime);
       }
 
       if (d.event === "onStateChange") {
@@ -318,19 +295,15 @@ export default function Home({
         if (d.info === 1) {                    // playing
           if (ind) ind.style.display = "none";
           isPlayingRef.current = true;
-          startProgressLoop();
         } else if (d.info === 2) {             // paused
-          if (ind) ind.style.display = "flex";
+          if (ind) { ind.textContent = "⏸"; ind.style.display = "flex"; }
           isPlayingRef.current = false;
-          stopProgressLoop();
         }
       }
     }
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, []);
-
-  useEffect(() => () => stopProgressLoop(), []);
 
   // ── Mute toggle ────────────────────────────────────────────────────────────
 
@@ -445,11 +418,7 @@ export default function Home({
                     />
                     <div
                       className="iframeClickBlocker"
-                      onClick={() => {
-                        const f = iframeRefs.current[item.videoId];
-                        if (isPlayingRef.current) ytCmd(f, "pauseVideo");
-                        else ytCmd(f, "playVideo");
-                      }}
+                      onClick={() => handleVideoTap(item.videoId)}
                     />
                   </>
                 ) : (
@@ -466,27 +435,25 @@ export default function Home({
                   className="pausedPlayIndicator"
                   ref={el => { if (el) pauseIndRefs.current[item.videoId] = el; else delete pauseIndRefs.current[item.videoId]; }}
                   style={{ display: "none", pointerEvents: "none" }}
-                >
-                  ⏸
-                </div>
+                />
               )}
 
-
               {isYt && !isFailed && isActive && (
-                <div
-                  className="ytProgressBar"
-                  ref={progressBarRef}
-                  onPointerDown={e => {
-                    e.stopPropagation();
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                    seekToPosition(e.clientX);
+                <input
+                  type="range"
+                  className="ytSeekBar"
+                  min={0}
+                  max={vidDuration || 100}
+                  step={0.1}
+                  value={vidCurrentTime}
+                  onChange={e => {
+                    const t = parseFloat(e.target.value);
+                    setVidCurrentTime(t);
+                    ytCmd(iframeRefs.current[item.videoId], "seekTo", [t, true]);
                   }}
-                  onPointerMove={e => {
-                    if (e.currentTarget.hasPointerCapture(e.pointerId)) seekToPosition(e.clientX);
-                  }}
-                >
-                  <div className="ytProgressFill" ref={progressFillRef} />
-                </div>
+                  onPointerDown={() => { isDraggingRef.current = true; }}
+                  onPointerUp={()   => { isDraggingRef.current = false; }}
+                />
               )}
 
               <div className="tiktokGradient" />

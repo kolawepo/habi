@@ -870,37 +870,53 @@ textarea {
   cursor: pointer;
 }
 
-.ytProgressBar {
+.ytSeekBar {
   position: absolute;
   bottom: 96px;
   left: 0;
   right: 0;
-  height: 28px;
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 4px;
-  z-index: 10;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
   cursor: pointer;
+  z-index: 10;
   touch-action: none;
 }
 
-.ytProgressBar::before {
-  content: '';
-  position: absolute;
-  bottom: 4px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.3);
+.ytSeekBar::-webkit-slider-runnable-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px;
 }
 
-.ytProgressFill {
-  height: 3px;
-  width: 0%;
-  background: rgba(255, 255, 255, 0.9);
-  pointer-events: none;
-  position: relative;
-  z-index: 1;
+.ytSeekBar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  margin-top: -5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.ytSeekBar::-moz-range-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px;
+  border: none;
+}
+
+.ytSeekBar::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .tiktokGradient {
