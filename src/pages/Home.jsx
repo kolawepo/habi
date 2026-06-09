@@ -44,6 +44,25 @@ function saveCache(skill, videos) {
   try { localStorage.setItem(`yt_${skill}`, JSON.stringify({ videos, ts: Date.now() })); } catch {}
 }
 
+// ── Position persistence ───────────────────────────────────────────────────────
+
+const LS_SKILL_KEY = "habi_lastSkill";
+const lsIdxKey = s => `habi_idx_${s}`;
+
+function readSavedIdx(skill) {
+  const v = parseInt(localStorage.getItem(lsIdxKey(skill)), 10);
+  return isNaN(v) ? null : v;
+}
+function writeSavedIdx(skill, idx) {
+  try { localStorage.setItem(lsIdxKey(skill), String(idx)); } catch {}
+}
+function pickStartIdx(skill, feedLen) {
+  if (!feedLen) return 0;
+  const saved = readSavedIdx(skill);
+  if (saved !== null && saved < feedLen) return saved;
+  return feedLen > 1 ? Math.floor(Math.random() * feedLen) : 0;
+}
+
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -52,7 +71,12 @@ export default function Home({
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
   friends, onShareToFriend, addMoreSkills,
 }) {
-  const [activeSkill, setActiveSkill] = useState(skills[0] || "");
+  const [activeSkill, setActiveSkill] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LS_SKILL_KEY);
+      return (saved && skills.includes(saved)) ? saved : (skills[0] || "");
+    } catch { return skills[0] || ""; }
+  });
   const [ytBySkill,   setYtBySkill]   = useState({});
   const [loading,     setLoading]     = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -73,8 +97,9 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const isDraggingRef = useRef(false);
-  const isPausedRef   = useRef(false);
+  const isDraggingRef          = useRef(false);
+  const isPausedRef            = useRef(false);
+  const pendingSkillRestoreRef = useRef(false);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -243,17 +268,61 @@ export default function Home({
   const feed = trimmedSearch ? searchResults : rawFeed;
   feedRef.current = feed;
 
-  // ── Reset on skill or search change ───────────────────────────────────────
+  // ── Save active skill ────────────────────────────────────────────────────
 
   useEffect(() => {
-    setActiveIndex(0);
-    feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+    if (activeSkill) try { localStorage.setItem(LS_SKILL_KEY, activeSkill); } catch {}
+  }, [activeSkill]);
+
+  // ── Skill change: restore saved position or pick random ──────────────────
+
+  useEffect(() => {
+    const feedLen = feedRef.current.length;
+    if (feedLen > 0) {
+      const idx = pickStartIdx(activeSkill, feedLen);
+      setActiveIndex(idx);
+      feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
+      pendingSkillRestoreRef.current = false;
+    } else {
+      // Feed not cached yet — mark to restore once it loads
+      setActiveIndex(0);
+      feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+      pendingSkillRestoreRef.current = true;
+    }
+  }, [activeSkill]); // eslint-disable-line
+
+  // ── Feed loaded async: apply deferred restore ────────────────────────────
+
+  useEffect(() => {
+    if (!pendingSkillRestoreRef.current) return;
+    const feedLen = feedRef.current.length;
+    if (!feedLen) return;
+    const idx = pickStartIdx(activeSkill, feedLen);
+    setActiveIndex(idx);
+    feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
+    pendingSkillRestoreRef.current = false;
+  }, [ytBySkill]); // eslint-disable-line
+
+  // ── Search change: scroll to top when entering; restore when clearing ────
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setActiveIndex(0);
+      feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+    } else {
+      const feedLen = feedRef.current.length;
+      const idx = pickStartIdx(activeSkill, feedLen);
+      setActiveIndex(idx);
+      feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
+    }
   }, [searchQuery]); // eslint-disable-line
 
+  // ── Save video index per skill (not during search) ───────────────────────
+
   useEffect(() => {
-    setActiveIndex(0);
-    feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
-  }, [activeSkill]);
+    if (!activeSkill || searchQuery.trim() || !feedRef.current.length) return;
+    writeSavedIdx(activeSkill, activeIndex);
+  }, [activeIndex]); // eslint-disable-line
 
   // ── IntersectionObserver ───────────────────────────────────────────────────
 
