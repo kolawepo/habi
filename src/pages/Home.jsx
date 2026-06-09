@@ -6,7 +6,7 @@ import ShareModal from "../components/ShareModal";
 
 function ytSrc(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -40,15 +40,14 @@ function saveCache(skill, videos) {
 export default function Home({
   firstName, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
-  friends, onShareToFriend, addMoreSkills, removeSkill,
+  friends, onShareToFriend, addMoreSkills,
 }) {
-  const [activeSkill,     setActiveSkill]     = useState(skills[0] || "");
-  const [ytBySkill,       setYtBySkill]       = useState({});
-  const [loading,         setLoading]         = useState(false);
-  const [activeIndex,     setActiveIndex]     = useState(0);
-  const [failed,          setFailed]          = useState(new Set());
-  const [shareTarget,     setShareTarget]     = useState(null);
-  const [showSkillsSheet, setShowSkillsSheet] = useState(false);
+  const [activeSkill, setActiveSkill] = useState(skills[0] || "");
+  const [ytBySkill,   setYtBySkill]   = useState({});
+  const [loading,     setLoading]     = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [failed,      setFailed]      = useState(new Set());
+  const [shareTarget, setShareTarget] = useState(null);
 
   const [muted, setMuted] = useState(false);
 
@@ -56,7 +55,6 @@ export default function Home({
   const slideRefs        = useRef([]);
   const iframeRefs       = useRef({});
   const readySet         = useRef(new Set());
-  const thumbOverlayRefs = useRef({});
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
@@ -190,27 +188,24 @@ export default function Home({
   }, []);
 
   // ── First gesture → play active video (handles browsers that block unmuted autoplay) ──
-  // Only mark as fired once a video iframe is actually found and commanded.
-  // This prevents the skills sheet or early taps from consuming the gesture
-  // before the iframe is mounted and ready.
 
   useEffect(() => {
     let fired = false;
     function onGesture() {
       if (fired) return;
-      const item = feedRef.current[activeIdxRef.current];
-      if (!item || item._type !== "youtube") return;
-      const f = iframeRefs.current[item.videoId];
-      if (!f) return;
       fired = true;
-      if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
-      ytCmd(f, "playVideo");
+      const item = feedRef.current[activeIdxRef.current];
+      if (item?._type === "youtube") {
+        const f = iframeRefs.current[item.videoId];
+        if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+        ytCmd(f, "playVideo");
+      }
     }
-    document.addEventListener("touchstart", onGesture, { passive: true, capture: true });
-    document.addEventListener("click", onGesture, { capture: true });
+    document.addEventListener("touchstart", onGesture, { passive: true });
+    document.addEventListener("click", onGesture);
     return () => {
-      document.removeEventListener("touchstart", onGesture, { capture: true });
-      document.removeEventListener("click", onGesture, { capture: true });
+      document.removeEventListener("touchstart", onGesture);
+      document.removeEventListener("click", onGesture);
     };
   }, []); // eslint-disable-line
 
@@ -253,7 +248,6 @@ export default function Home({
 
       if (d.event === "onReady") {
         readySet.current.add(vid);
-        if (thumbOverlayRefs.current[vid]) thumbOverlayRefs.current[vid].style.opacity = '0';
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
           if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
@@ -331,7 +325,7 @@ export default function Home({
             ))}
           </div>
           {addMoreSkills && (
-            <button className="editSkillsBtn" onClick={() => setShowSkillsSheet(true)}>⚙ Skills</button>
+            <button className="editSkillsBtn" onClick={addMoreSkills}>+ Skills</button>
           )}
         </div>
       </div>
@@ -360,31 +354,17 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <>
-                    <iframe
-                      key={item.videoId}
-                      ref={el => {
-                        if (el) iframeRefs.current[item.videoId] = el;
-                        else {
-                          delete iframeRefs.current[item.videoId];
-                          readySet.current.delete(item.videoId);
-                          delete thumbOverlayRefs.current[item.videoId];
-                        }
-                      }}
-                      className="tiktokSlideMedia"
-                      src={ytSrc(item.videoId)}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                    />
-                    <div
-                      ref={el => {
-                        if (el) thumbOverlayRefs.current[item.videoId] = el;
-                        else delete thumbOverlayRefs.current[item.videoId];
-                      }}
-                      className="ytThumbOverlay"
-                      style={{ backgroundImage: `url(https://img.youtube.com/vi/${item.videoId}/maxresdefault.jpg)` }}
-                    />
-                  </>
+                  <iframe
+                    key={item.videoId}
+                    ref={el => {
+                      if (el) iframeRefs.current[item.videoId] = el;
+                      else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
+                    }}
+                    className="tiktokSlideMedia"
+                    src={ytSrc(item.videoId)}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  />
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
@@ -476,43 +456,6 @@ export default function Home({
           onSend={uid => onShareToFriend(uid, shareTarget)}
           onClose={() => setShareTarget(null)}
         />
-      )}
-
-      {showSkillsSheet && (
-        <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)}>
-          <div className="skillsSheet" onClick={e => e.stopPropagation()}>
-            <div className="skillsSheetHeader">
-              <h2>Your Skills</h2>
-              <button className="skillsSheetClose" onClick={() => setShowSkillsSheet(false)}>✕</button>
-            </div>
-
-            {skills.length === 0 ? (
-              <p className="skillsSheetEmpty">No skills yet — add some below.</p>
-            ) : (
-              <div className="skillsSheetList">
-                {skills.map(s => (
-                  <div key={s} className="skillsSheetItem">
-                    <span>{skillEmoji(s)} {s}</span>
-                    <button
-                      className="skillsSheetRemove"
-                      onClick={() => {
-                        removeSkill(s);
-                        if (activeSkill === s) setActiveSkill(skills.find(x => x !== s) || "");
-                      }}
-                    >✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <button
-              className="skillsSheetAdd"
-              onClick={() => { setShowSkillsSheet(false); addMoreSkills(); }}
-            >
-              + Add New Skill
-            </button>
-          </div>
-        </div>
       )}
     </>
   );
