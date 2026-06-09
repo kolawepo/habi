@@ -19,6 +19,8 @@ function ytSrcSound(videoId) {
   );
 }
 
+const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+
 function ytCmd(iframe, fn, args = []) {
   iframe?.contentWindow?.postMessage(
     JSON.stringify({ event: "command", func: fn, args }),
@@ -71,7 +73,8 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const isDraggingRef     = useRef(false);
+  const isDraggingRef = useRef(false);
+  const isPausedRef   = useRef(false);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -314,6 +317,11 @@ export default function Home({
         }
       }
 
+      if (d.event === "onStateChange") {
+        if (d.info === 1) isPausedRef.current = false; // playing
+        if (d.info === 2) isPausedRef.current = true;  // paused
+      }
+
       if (d.event === "infoDelivery" && d.info) {
         if (d.info.duration)              setVidDuration(d.info.duration);
         if (d.info.currentTime != null && !isDraggingRef.current)
@@ -324,6 +332,19 @@ export default function Home({
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, []);
+
+  // ── Play/pause toggle (desktop click overlay) ─────────────────────────────
+
+  function togglePlayPause(videoId) {
+    const f = iframeRefs.current[videoId];
+    if (isPausedRef.current) {
+      ytCmd(f, "playVideo");
+      isPausedRef.current = false;
+    } else {
+      ytCmd(f, "pauseVideo");
+      isPausedRef.current = true;
+    }
+  }
 
   // ── Mute toggle ────────────────────────────────────────────────────────────
 
@@ -429,17 +450,25 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <iframe
-                    key={item.videoId}
-                    ref={el => {
-                      if (el) iframeRefs.current[item.videoId] = el;
-                      else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
-                    }}
-                    className="tiktokSlideMedia"
-                    src={ytSrcSound(item.videoId)}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                  />
+                  <>
+                    <iframe
+                      key={item.videoId}
+                      ref={el => {
+                        if (el) iframeRefs.current[item.videoId] = el;
+                        else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
+                      }}
+                      className="tiktokSlideMedia"
+                      src={ytSrcSound(item.videoId)}
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                    {!isMobile && (
+                      <div
+                        style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
+                        onClick={() => togglePlayPause(item.videoId)}
+                      />
+                    )}
+                  </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
