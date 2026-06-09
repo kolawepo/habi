@@ -49,7 +49,10 @@ export default function Home({
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  const [muted, setMuted] = useState(false);
+  const [muted,         setMuted]         = useState(false);
+  const [soundUnlocked, setSoundUnlocked] = useState(false);
+
+  const soundUnlockedRef = useRef(false); soundUnlockedRef.current = soundUnlocked;
 
   const feedEl           = useRef(null);
   const slideRefs        = useRef([]);
@@ -187,33 +190,6 @@ export default function Home({
     return () => obsRef.current?.disconnect();
   }, []);
 
-  // ── First gesture → unmute active video ──────────────────────────────────────
-  // mute=1 in the URL lets the player autoplay on mobile (browsers block unmuted
-  // autoplay). The first swipe/tap in gesture context unlocks audio. We only mark
-  // the gesture as consumed once we have a live iframe — early taps before the
-  // iframe mounts don't waste the unlock. capture:true fires before any
-  // stopPropagation inside child elements.
-
-  useEffect(() => {
-    let audioUnlocked = false;
-    function unlockAudio() {
-      if (audioUnlocked) return;
-      const item = feedRef.current[activeIdxRef.current];
-      if (!item || item._type !== "youtube") return;
-      const f = iframeRefs.current[item.videoId];
-      if (!f) return;
-      audioUnlocked = true;
-      if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
-      ytCmd(f, "playVideo");
-    }
-    document.addEventListener("touchstart", unlockAudio, { passive: true, capture: true });
-    document.addEventListener("click", unlockAudio, { capture: true });
-    return () => {
-      document.removeEventListener("touchstart", unlockAudio, { capture: true });
-      document.removeEventListener("click", unlockAudio, { capture: true });
-    };
-  }, []); // eslint-disable-line
-
   // ── When active index changes, play it if the iframe is already ready ─────
   // (usually onReady fires after mount and handles it; this covers fast swipes
   //  where the iframe was pre-mounted from a previous render cycle)
@@ -223,7 +199,7 @@ export default function Home({
     if (!item || item._type !== "youtube") return;
     const f = iframeRefs.current[item.videoId];
     if (f && readySet.current.has(item.videoId)) {
-      if (mutedRef.current) ytCmd(f, "mute");
+      if (mutedRef.current || !soundUnlockedRef.current) ytCmd(f, "mute");
       else { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
       ytCmd(f, "playVideo");
     }
@@ -255,7 +231,7 @@ export default function Home({
         readySet.current.add(vid);
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
-          if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
+          if (mutedRef.current || !soundUnlockedRef.current) ytCmd(iframeRefs.current[vid], "mute");
           else { ytCmd(iframeRefs.current[vid], "unMute"); ytCmd(iframeRefs.current[vid], "setVolume", [100]); }
           ytCmd(iframeRefs.current[vid], "playVideo");
         } else {
@@ -387,6 +363,22 @@ export default function Home({
                 >
                   ⏸
                 </div>
+              )}
+
+              {isYt && !isFailed && isActive && !soundUnlocked && (
+                <button
+                  className="tapForSoundBtn"
+                  onClick={e => {
+                    e.stopPropagation();
+                    const f = iframeRefs.current[item.videoId];
+                    ytCmd(f, "unMute");
+                    ytCmd(f, "setVolume", [100]);
+                    ytCmd(f, "playVideo");
+                    setSoundUnlocked(true);
+                  }}
+                >
+                  Tap for sound 🔊
+                </button>
               )}
 
               <div className="tiktokGradient" />
