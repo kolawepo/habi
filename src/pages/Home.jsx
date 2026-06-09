@@ -64,6 +64,8 @@ export default function Home({
   const [muted,         setMuted]         = useState(false);
   const [soundUnlocked, setSoundUnlocked] = useState(!isMobile);
   const [searchQuery,   setSearchQuery]   = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [vidDuration,   setVidDuration]   = useState(0);
   const [vidCurrentTime,setVidCurrentTime]= useState(0);
 
@@ -144,6 +146,55 @@ export default function Home({
     return confirmed;
   }
 
+  async function fetchSearchQuery(queryString, cx) {
+    if (!YT_KEY) return [];
+    const q = encodeURIComponent(queryString);
+    const confirmed = []; const seen = new Set();
+    let pageToken = null; let fetched = 0;
+
+    while (confirmed.length < 8 && fetched < 50) {
+      if (cx.current) return null;
+      const size = Math.min(25, 50 - fetched);
+      let url =
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
+        `&videoEmbeddable=true&videoSyndicated=true&relevanceLanguage=en&safeSearch=strict` +
+        `&maxResults=${size}&q=${q}&key=${YT_KEY}`;
+      if (pageToken) url += `&pageToken=${pageToken}`;
+
+      let data;
+      try { data = await fetch(url).then(r => r.json()); } catch { break; }
+      if (data.error || cx.current) break;
+      pageToken = data.nextPageToken || null;
+
+      const batch = (data.items || [])
+        .filter(i => i.id?.videoId && !seen.has(i.id.videoId))
+        .map(i => { seen.add(i.id.videoId); return {
+          videoId: i.id.videoId, title: i.snippet.title,
+          creator: i.snippet.channelTitle, skill: activeSkill,
+          thumbnail: i.snippet.thumbnails?.high?.url || i.snippet.thumbnails?.medium?.url,
+          _type: "youtube",
+        }; });
+      fetched += batch.length;
+      if (!batch.length) break;
+
+      let stats;
+      try {
+        stats = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${batch.map(v => v.videoId).join(",")}&key=${YT_KEY}`
+        ).then(r => r.json());
+      } catch { break; }
+
+      const views = Object.fromEntries(
+        (stats.items || []).map(i => [i.id, parseInt(i.statistics?.viewCount || "0", 10)])
+      );
+      if (cx.current) return null;
+      confirmed.push(...batch.filter(v => (views[v.videoId] || 0) >= 1000));
+      if (!pageToken) break;
+    }
+    if (cx.current) return null;
+    return confirmed;
+  }
+
   // Load active skill
   useEffect(() => {
     if (!activeSkill) return;
@@ -173,6 +224,25 @@ export default function Home({
     if (skills.length && !skills.includes(activeSkill)) setActiveSkill(skills[0]);
   }, [skills]); // eslint-disable-line
 
+  // Search: fetch YouTube results for the typed query (debounced 500 ms)
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) { setSearchResults([]); setSearchLoading(false); return; }
+
+    const cx = { current: false };
+    setSearchLoading(true);
+    setSearchResults([]);
+
+    const timer = setTimeout(() => {
+      fetchSearchQuery(`${activeSkill} ${trimmed}`, cx)
+        .then(v => { if (!cx.current) setSearchResults(v || []); })
+        .catch(() => {})
+        .finally(() => { if (!cx.current) setSearchLoading(false); });
+    }, 500);
+
+    return () => { cx.current = true; clearTimeout(timer); };
+  }, [searchQuery, activeSkill]); // eslint-disable-line
+
   // ── Feed ──────────────────────────────────────────────────────────────────
 
   const rawFeed = [
@@ -182,13 +252,8 @@ export default function Home({
       .map(p => ({ ...p, _type: "post" })),
     ...(ytBySkill[activeSkill] || []).map(v => ({ ...v, _type: "youtube" })),
   ];
-  const q = searchQuery.trim().toLowerCase();
-  const feed = q
-    ? rawFeed.filter(item =>
-        (item.title || item.caption || "").toLowerCase().includes(q) ||
-        (item.creator || item.username || "").toLowerCase().includes(q)
-      )
-    : rawFeed;
+  const trimmedSearch = searchQuery.trim();
+  const feed = trimmedSearch ? searchResults : rawFeed;
   feedRef.current = feed;
 
   // ── Reset on skill or search change ───────────────────────────────────────
@@ -311,7 +376,15 @@ export default function Home({
   if (feed.length === 0) {
     return (
       <div className="feedEmptyState">
-        {!skills.length ? "Add skills to see videos" : loading ? "Loading…" : `No ${activeSkill} videos yet.`}
+        {!skills.length
+          ? "Add skills to see videos"
+          : searchLoading
+            ? "Searching…"
+            : trimmedSearch
+              ? `No results for "${trimmedSearch}"`
+              : loading
+                ? "Loading…"
+                : `No ${activeSkill} videos yet.`}
       </div>
     );
   }

@@ -740,9 +740,10 @@ textarea {
   flex: 1;
   background: transparent;
   color: white;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   min-width: 0;
+  touch-action: manipulation;
 }
 
 .feedSearchBar input::placeholder {
