@@ -429,20 +429,17 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <>
-                    <iframe
-                      key={item.videoId}
-                      ref={el => {
-                        if (el) iframeRefs.current[item.videoId] = el;
-                        else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
-                      }}
-                      className="tiktokSlideMedia"
-                      src={ytSrcSound(item.videoId)}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                    />
-                    <div style={{ position: "absolute", inset: 0, zIndex: 1, touchAction: "pan-y" }} />
-                  </>
+                  <iframe
+                    key={item.videoId}
+                    ref={el => {
+                      if (el) iframeRefs.current[item.videoId] = el;
+                      else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
+                    }}
+                    className="tiktokSlideMedia"
+                    src={ytSrcSound(item.videoId)}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  />
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
