@@ -272,8 +272,12 @@ const [streak, setStreak] = useState(0);
     );
   }
 
-  function removeSkill(skillToRemove) {
-    setSelectedSkills((prev) => prev.filter((skill) => skill !== skillToRemove));
+  async function removeSkill(skillToRemove) {
+    const updated = selectedSkills.filter((skill) => skill !== skillToRemove);
+    setSelectedSkills(updated);
+    if (currentUser) {
+      await updateDoc(doc(db, "users", currentUser.uid), { selectedSkills: updated });
+    }
   }
 
   function handleUpload(e) {

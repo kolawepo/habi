@@ -68,6 +68,7 @@ export default function MainApp({
   friends={friends}
   onShareToFriend={onShareToFriend}
   addMoreSkills={addMoreSkills}
+  removeSkill={removeSkill}
 />
         )}
 
