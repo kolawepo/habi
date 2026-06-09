@@ -3953,7 +3953,7 @@ textarea::placeholder {
 .skillsSheet {
   width: 100%;
   max-width: 420px;
-  background: #1c1c1e;
+  background: var(--card-bg);
   border-radius: 24px 24px 0 0;
   padding: 12px 20px 44px;
   max-height: 75svh;
@@ -3966,7 +3966,7 @@ textarea::placeholder {
   width: 36px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--border);
   margin: 0 auto 18px;
   flex-shrink: 0;
 }
@@ -3974,7 +3974,7 @@ textarea::placeholder {
 .skillsSheetTitle {
   font-size: 17px;
   font-weight: 700;
-  color: white;
+  color: var(--text);
   text-align: center;
   margin-bottom: 16px;
 }
@@ -3992,18 +3992,18 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface);
   border-radius: 14px;
   padding: 14px 16px;
   font-size: 16px;
   font-weight: 600;
-  color: white;
+  color: var(--text);
 }
 
 .skillsSheetRemove {
   border: none;
-  background: rgba(255, 59, 48, 0.2);
-  color: #ff453a;
+  background: rgba(255, 59, 48, 0.15);
+  color: #e95443;
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -4021,8 +4021,8 @@ textarea::placeholder {
   border: none;
   border-radius: 14px;
   padding: 15px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--surface);
+  color: var(--text);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
