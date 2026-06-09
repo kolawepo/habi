@@ -863,6 +863,39 @@ textarea {
   line-height: 1;
 }
 
+.ytProgressBar {
+  position: absolute;
+  bottom: 96px;
+  left: 0;
+  right: 0;
+  height: 28px;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 4px;
+  z-index: 10;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.ytProgressBar::before {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ytProgressFill {
+  height: 3px;
+  width: 0%;
+  background: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
 .tiktokGradient {
   position: absolute;
   inset: 0;
