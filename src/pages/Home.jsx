@@ -1,12 +1,22 @@
 import { useEffect, useState, useRef } from "react";
+import { flushSync } from "react-dom";
 import { skillEmoji } from "../utils/emojis";
 import ShareModal from "../components/ShareModal";
 
 // ── YouTube helpers ────────────────────────────────────────────────────────────
 
+// mute=1 so the player can autoplay before the user has gestured
 function ytSrc(videoId) {
   return (
     `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
+    `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
+  );
+}
+
+// no mute — used after the user has unlocked audio via a tap gesture
+function ytSrcSound(videoId) {
+  return (
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
   );
 }
@@ -342,7 +352,7 @@ export default function Home({
                       else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
                     }}
                     className="tiktokSlideMedia"
-                    src={ytSrc(item.videoId)}
+                    src={soundUnlocked ? ytSrcSound(item.videoId) : ytSrc(item.videoId)}
                     allow="autoplay; encrypted-media"
                     allowFullScreen
                   />
@@ -370,11 +380,11 @@ export default function Home({
                   className="tapForSoundBtn"
                   onClick={e => {
                     e.stopPropagation();
-                    const f = iframeRefs.current[item.videoId];
-                    ytCmd(f, "unMute");
-                    ytCmd(f, "setVolume", [100]);
-                    ytCmd(f, "playVideo");
-                    setSoundUnlocked(true);
+                    // flushSync forces React to synchronously re-render and update
+                    // the iframe src (removing mute=1) before this click handler
+                    // returns, keeping the src change inside iOS Safari's gesture
+                    // window so the browser allows audio.
+                    flushSync(() => setSoundUnlocked(true));
                   }}
                 >
                   Tap for sound 🔊
