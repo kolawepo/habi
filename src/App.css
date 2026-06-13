@@ -5234,42 +5234,154 @@ textarea::placeholder {
    iOS INSTALL PROMPT
 ========================= */
 
-.iosPromptBanner {
+.iosPromptOverlay {
   position: fixed;
-  bottom: 80px;
-  left: 12px;
-  right: 12px;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 110px; /* sits above Safari chrome */
+}
+
+.iosPromptCard {
   background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 14px 40px 14px 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-  z-index: 1000;
+  border-radius: 20px;
+  padding: 24px 20px 20px;
+  width: calc(100% - 32px);
+  max-width: 380px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  animation: iosPromptSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes iosPromptSlideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.iosPromptTop {
   display: flex;
   align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
 }
 
-.iosPromptText {
+.iosPromptAppIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.iosPromptHeading {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.iosPromptSub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.iosPromptSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.iosPromptStep {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.iosPromptStepNum {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #007aff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iosPromptStepBody {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.iosPromptStepLabel {
   font-size: 14px;
   color: var(--text);
-  line-height: 1.4;
+  font-weight: 500;
 }
 
-.iosPromptIcon {
+.iosShareChip {
   display: inline-flex;
   align-items: center;
-  vertical-align: middle;
-  color: #007aff;
+  gap: 5px;
+  background: #007aff;
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 10px 4px 7px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.iosPromptClose {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: none;
+.iosAddChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 10px 4px 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.iosPromptGotIt {
+  width: 100%;
+  padding: 14px;
   border: none;
-  font-size: 14px;
-  color: var(--text-muted);
-  padding: 4px;
+  border-radius: 12px;
+  background: #007aff;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
+}
+
+/* Animated arrow pointing at share button */
+.iosPromptArrowWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  animation: iosArrowBounce 1s ease-in-out infinite;
+}
+
+.iosPromptArrow {
+  font-size: 32px;
+  color: #fff;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+@keyframes iosArrowBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(8px); }
 }
