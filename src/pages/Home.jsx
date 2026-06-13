@@ -28,6 +28,25 @@ function ytCmd(iframe, fn, args = []) {
   );
 }
 
+// ── Position / skill persistence ──────────────────────────────────────────────
+
+const LS_SKILL_KEY = "habi_lastSkill";
+const lsIdxKey = s => `habi_idx_${s}`;
+
+function readSavedIdx(skill) {
+  const v = parseInt(localStorage.getItem(lsIdxKey(skill)), 10);
+  return isNaN(v) ? null : v;
+}
+function writeSavedIdx(skill, idx) {
+  try { localStorage.setItem(lsIdxKey(skill), String(idx)); } catch {}
+}
+function pickStartIdx(skill, feedLen) {
+  if (!feedLen) return 0;
+  const saved = readSavedIdx(skill);
+  if (saved !== null && saved < feedLen) return saved;
+  return feedLen > 1 ? Math.floor(Math.random() * feedLen) : 0;
+}
+
 // ── Cache ──────────────────────────────────────────────────────────────────────
 
 const TTL = 24 * 60 * 60 * 1000;
@@ -50,16 +69,20 @@ function saveCache(skill, videos) {
 export default function Home({
   firstName, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
-  friends, onShareToFriend, addMoreSkills,
+  friends, onShareToFriend, addMoreSkills, removeSkill,
 }) {
-  const [activeSkill, setActiveSkill] = useState(skills[0] || "");
+  const [activeSkill, setActiveSkill] = useState(() => {
+    try { return localStorage.getItem(LS_SKILL_KEY) || (skills[0] || ""); }
+    catch { return skills[0] || ""; }
+  });
   const [ytBySkill,   setYtBySkill]   = useState({});
   const [loading,     setLoading]     = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  const [muted,       setMuted]       = useState(false);
+  const [showSkillsSheet, setShowSkillsSheet] = useState(false);
+  const [muted,           setMuted]           = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -73,8 +96,9 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const isDraggingRef = useRef(false);
-  const isPausedRef   = useRef(false);
+  const isDraggingRef          = useRef(false);
+  const isPausedRef            = useRef(false);
+  const pendingSkillRestoreRef = useRef(false);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -243,17 +267,53 @@ export default function Home({
   const feed = trimmedSearch ? searchResults : rawFeed;
   feedRef.current = feed;
 
-  // ── Reset on skill or search change ───────────────────────────────────────
+  // ── Persist active skill ──────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (activeSkill) try { localStorage.setItem(LS_SKILL_KEY, activeSkill); } catch {}
+  }, [activeSkill]);
+
+  // ── Save video index per skill (not during search) ────────────────────────
+
+  useEffect(() => {
+    if (!activeSkill || searchQuery.trim() || !feedRef.current.length) return;
+    writeSavedIdx(activeSkill, activeIndex);
+  }, [activeIndex]); // eslint-disable-line
+
+  // ── Skill change: restore saved position or pick random ──────────────────
+
+  useEffect(() => {
+    const feedLen = feedRef.current.length;
+    if (feedLen > 0) {
+      const idx = pickStartIdx(activeSkill, feedLen);
+      setActiveIndex(idx);
+      feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
+      pendingSkillRestoreRef.current = false;
+    } else {
+      setActiveIndex(0);
+      feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+      pendingSkillRestoreRef.current = true;
+    }
+  }, [activeSkill]); // eslint-disable-line
+
+  // ── Feed loaded async: apply deferred restore ─────────────────────────────
+
+  useEffect(() => {
+    if (!pendingSkillRestoreRef.current) return;
+    const feedLen = feedRef.current.length;
+    if (!feedLen) return;
+    const idx = pickStartIdx(activeSkill, feedLen);
+    setActiveIndex(idx);
+    feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
+    pendingSkillRestoreRef.current = false;
+  }, [ytBySkill]); // eslint-disable-line
+
+  // ── Search change: scroll to top ──────────────────────────────────────────
 
   useEffect(() => {
     setActiveIndex(0);
     feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [searchQuery]); // eslint-disable-line
-
-  useEffect(() => {
-    setActiveIndex(0);
-    feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
-  }, [activeSkill]);
 
   // ── IntersectionObserver ───────────────────────────────────────────────────
 
@@ -417,8 +477,8 @@ export default function Home({
               </button>
             ))}
           </div>
-          {addMoreSkills && (
-            <button className="editSkillsBtn" onClick={addMoreSkills}>+ Skills</button>
+          {(addMoreSkills || removeSkill) && (
+            <button className="editSkillsBtn" onClick={() => setShowSkillsSheet(true)}>⚙ Skills</button>
           )}
         </div>
       </div>
@@ -569,6 +629,31 @@ export default function Home({
           onSend={uid => onShareToFriend(uid, shareTarget)}
           onClose={() => setShareTarget(null)}
         />
+      )}
+
+      {showSkillsSheet && (
+        <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)}>
+          <div className="skillsSheet" onClick={e => e.stopPropagation()}>
+            <div className="skillsSheetHandle" />
+            <p className="skillsSheetTitle">My Skills</p>
+            <ul className="skillsSheetList">
+              {skills.map(s => (
+                <li key={s} className="skillsSheetItem">
+                  <span>{skillEmoji(s)} {s}</span>
+                  {skills.length > 1 && removeSkill && (
+                    <button className="skillsSheetRemove" onClick={() => removeSkill(s)}>✕</button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {addMoreSkills && (
+              <button
+                className="skillsSheetAdd"
+                onClick={() => { setShowSkillsSheet(false); addMoreSkills(); }}
+              >+ Add New Skill</button>
+            )}
+          </div>
+        </div>
       )}
     </>
   );
