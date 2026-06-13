@@ -35,11 +35,12 @@ export function useFCM(currentUser, onTabSwitch) {
           console.log("[FCM] token saved to Firestore");
         }
 
-        // Foreground messages: show a native notification
+        // Foreground messages: show a native notification.
+        // We use data-only payloads so read from payload.data, not payload.notification.
         unsubscribe = onMessage(m, (payload) => {
-          const title = payload.notification?.title || "Habi";
-          const body  = payload.notification?.body  || "";
-          const link  = payload.data?.link || "/";
+          const title = payload.data?.title || "Habi";
+          const body  = payload.data?.body  || "";
+          const link  = payload.data?.link  || "/";
 
           if (Notification.permission === "granted") {
             const n = new Notification(title, { body, icon: "/bibi.png" });

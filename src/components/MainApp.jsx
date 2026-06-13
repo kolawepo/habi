@@ -52,6 +52,8 @@ export default function MainApp({
   onShareToFriend,
   handleLikePost,
   likedPosts,
+  openMessageUid,
+  onClearOpenUid,
 }) {
   const [showSearch, setShowSearch] = useState(false);
 
@@ -109,7 +111,13 @@ export default function MainApp({
         {tab === "streaks" && <Streaks streak={streak} />}
 
         {tab === "messages" && (
-          <Messages currentUser={currentUser} username={username} friends={friends} />
+          <Messages
+            currentUser={currentUser}
+            username={username}
+            friends={friends}
+            openConvoWithUid={openMessageUid}
+            onClearOpenUid={onClearOpenUid}
+          />
         )}
 
         {tab === "profile" && (

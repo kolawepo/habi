@@ -33,16 +33,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ sent: false, reason: "no fcmToken on user" });
     }
 
+    // Data-only message — no top-level `notification` key.
+    // This prevents the browser from auto-displaying a notification while our
+    // service worker's onBackgroundMessage also calls showNotification (duplicates).
     await msg.send({
       token,
-      notification: { title, body },
-      data: { link },
       webpush: {
-        notification: {
-          icon: "https://habi-sepia.vercel.app/bibi.png",
-          badge: "https://habi-sepia.vercel.app/favicon.svg",
-        },
-        fcm_options: { link: `https://habi-sepia.vercel.app${link}` },
+        data: { title, body, link },
       },
     });
 

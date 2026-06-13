@@ -25,7 +25,7 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400000)}d`;
 }
 
-export default function Messages({ currentUser, username, friends }) {
+export default function Messages({ currentUser, username, friends, openConvoWithUid, onClearOpenUid }) {
   const [conversations,  setConversations]  = useState([]);
   const [selectedConvo,  setSelectedConvo]  = useState(null);
   const [messages,       setMessages]       = useState([]);
@@ -33,7 +33,8 @@ export default function Messages({ currentUser, username, friends }) {
   const [profiles,       setProfiles]       = useState({});
   const [friendProfiles, setFriendProfiles] = useState([]);
   const [showCompose,    setShowCompose]    = useState(false);
-  const threadRef = useRef(null);
+  const threadRef  = useRef(null);
+  const sendingRef = useRef(false);
 
   // ── Conversations list ────────────────────────────────────────────────────
   useEffect(() => {
@@ -130,9 +131,18 @@ export default function Messages({ currentUser, username, friends }) {
     }
   }, [messages]);
 
+  // ── Deep-link: open conversation when notified ───────────────────────────
+  useEffect(() => {
+    if (!openConvoWithUid || !currentUser || selectedConvo) return;
+    openConvoWith(openConvoWithUid);
+    onClearOpenUid?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openConvoWithUid, currentUser]);
+
   // ── Send a text message ───────────────────────────────────────────────────
   async function sendText() {
-    if (!text.trim() || !selectedConvo || !currentUser) return;
+    if (!text.trim() || !selectedConvo || !currentUser || sendingRef.current) return;
+    sendingRef.current = true;
     const trimmed = text.trim();
     setText("");
 
@@ -155,9 +165,10 @@ export default function Messages({ currentUser, username, friends }) {
         otherUid,
         `${username} sent you a message`,
         trimmed.length > 80 ? trimmed.slice(0, 80) + "…" : trimmed,
-        "/?tab=messages"
+        `/?tab=messages&uid=${currentUser.uid}`
       );
     }
+    sendingRef.current = false;
   }
 
   // ── Open or create a conversation ─────────────────────────────────────────

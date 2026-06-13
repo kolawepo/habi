@@ -65,6 +65,11 @@ export default function App() {
     return p.get("tab") || "home";
   });
 
+  const [openMessageUid, setOpenMessageUid] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("tab") === "messages" ? (p.get("uid") || null) : null;
+  });
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const name = `${firstName} ${lastName}`.trim();
@@ -162,7 +167,9 @@ const [streak, setStreak] = useState(0);
   function handleNotificationTabSwitch(link) {
     const params = new URLSearchParams(link.split("?")[1] || "");
     const t = params.get("tab");
+    const uid = params.get("uid");
     if (t) setTab(t);
+    if (uid) setOpenMessageUid(uid);
   }
   useFCM(currentUser, handleNotificationTabSwitch);
 
@@ -667,7 +674,7 @@ async function handleRemoveFriend
       recipientUid,
       `${username} sent you a video`,
       videoData.title,
-      "/?tab=messages"
+      `/?tab=messages&uid=${currentUser.uid}`
     );
   }
 
@@ -993,6 +1000,8 @@ async function handleRemoveFriend
           toggleDarkMode={toggleDarkMode}
           handleLikePost={handleLikePost}
           likedPosts={likedPosts}
+          openMessageUid={openMessageUid}
+          onClearOpenUid={() => setOpenMessageUid(null)}
           />
       )}
 

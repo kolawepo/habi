@@ -12,16 +12,18 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Background messages (app closed / minimised)
+// Background messages (app closed / minimised).
+// We send data-only payloads so the browser never auto-displays a duplicate;
+// we build the notification ourselves here.
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || 'Habi';
-  const body  = payload.notification?.body  || '';
-  const link  = payload.data?.link || '/';
+  const title = payload.data?.title || 'Habi';
+  const body  = payload.data?.body  || '';
+  const link  = payload.data?.link  || '/';
 
   self.registration.showNotification(title, {
     body,
-    icon: '/bibi.png',
-    badge: '/favicon.svg',
+    icon: 'https://habi-sepia.vercel.app/bibi.png',
+    badge: 'https://habi-sepia.vercel.app/favicon.svg',
     data: { link },
   });
 });
