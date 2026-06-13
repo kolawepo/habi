@@ -5386,7 +5386,7 @@ textarea::placeholder {
   padding: 14px;
   border: none;
   border-radius: 13px;
-  background: #007aff;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
   color: #fff;
   font-size: 16px;
   font-weight: 700;
