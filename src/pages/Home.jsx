@@ -256,12 +256,14 @@ export default function Home({
 
   // ── Feed ──────────────────────────────────────────────────────────────────
 
+  const activeSkillVideos = ytBySkill[activeSkill]; // stable ref — only changes when this skill's data arrives
+
   const rawFeed = [
     ...allPosts
       .filter(p => p.postType === "tutorial" && p.skill === activeSkill)
       .slice(0, 20)
       .map(p => ({ ...p, _type: "post" })),
-    ...(ytBySkill[activeSkill] || []).map(v => ({ ...v, _type: "youtube" })),
+    ...(activeSkillVideos || []).map(v => ({ ...v, _type: "youtube" })),
   ];
   const trimmedSearch = searchQuery.trim();
   const feed = trimmedSearch ? searchResults : rawFeed;
@@ -297,6 +299,8 @@ export default function Home({
   }, [activeSkill]); // eslint-disable-line
 
   // ── Feed loaded async: apply deferred restore ─────────────────────────────
+  // Depends only on the active skill's videos — background prefetches for
+  // other skills do NOT fire this, preventing spurious scrollTo calls during swipes.
 
   useEffect(() => {
     if (!pendingSkillRestoreRef.current) return;
@@ -306,7 +310,7 @@ export default function Home({
     setActiveIndex(idx);
     feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
     pendingSkillRestoreRef.current = false;
-  }, [ytBySkill]); // eslint-disable-line
+  }, [activeSkillVideos]); // eslint-disable-line
 
   // ── Search change: scroll to top ──────────────────────────────────────────
 
