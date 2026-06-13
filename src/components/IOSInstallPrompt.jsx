@@ -1,8 +1,5 @@
 import { useState } from "react";
 
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-const isStandalone = window.navigator.standalone === true;
-
 const STEPS = [
   {
     icon: (
@@ -52,14 +49,38 @@ const STEPS = [
 ];
 
 export default function IOSInstallPrompt() {
-  const [dismissed, setDismissed] = useState(
-    () => localStorage.getItem("habi_ios_prompt_dismissed") === "1"
-  );
+  // Compute inside the component so values are always fresh and loggable
+  const isIOS       = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const storedKey   = "habi_ios_prompt_dismissed";
+  const storedValue = localStorage.getItem(storedKey);
 
-  if (!isIOS || isStandalone || dismissed) return null;
+  console.log("[IOSInstallPrompt] mounted —", {
+    isIOS,
+    isStandalone,
+    storedValue,
+    userAgent: navigator.userAgent,
+  });
+
+  const [dismissed, setDismissed] = useState(() => storedValue === "1");
+
+  if (!isIOS) {
+    console.log("[IOSInstallPrompt] hidden: not iOS");
+    return null;
+  }
+  if (isStandalone) {
+    console.log("[IOSInstallPrompt] hidden: already standalone (PWA)");
+    return null;
+  }
+  if (dismissed) {
+    console.log("[IOSInstallPrompt] hidden: user dismissed (localStorage key:", storedKey, "=", storedValue, ")");
+    return null;
+  }
+
+  console.log("[IOSInstallPrompt] SHOWING prompt");
 
   function dismiss() {
-    localStorage.setItem("habi_ios_prompt_dismissed", "1");
+    localStorage.setItem(storedKey, "1");
     setDismissed(true);
   }
 
