@@ -533,12 +533,10 @@ export default function Home({
                       allow="autoplay; encrypted-media"
                       allowFullScreen
                     />
-                    {!isMobile && (
-                      <div
-                        style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
-                        onClick={() => togglePlayPause(item.videoId)}
-                      />
-                    )}
+                    <div
+                      style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer", touchAction: "pan-y" }}
+                      onClick={() => togglePlayPause(item.videoId)}
+                    />
                   </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />

@@ -848,8 +848,10 @@ textarea {
 .tiktokFeed {
   position: fixed;
   inset: 0;
+  height: 100dvh;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
   z-index: 1;
   -webkit-overflow-scrolling: touch;
   background: #000;
