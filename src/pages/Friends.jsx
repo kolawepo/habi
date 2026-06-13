@@ -1,6 +1,24 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
+
+function timeAgo(ts) {
+  if (!ts) return "";
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  const diff = Date.now() - date.getTime();
+  if (diff < 60000)    return "now";
+  if (diff < 3600000)  return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+function notifIcon(type) {
+  if (type === "friend_request")  return "👋";
+  if (type === "friend_accepted") return "🤝";
+  if (type === "new_post")        return "📸";
+  if (type === "post_like")       return "❤️";
+  return "🔔";
+}
 import { db } from "../firebase";
 
 const INVITE_URL  = "https://habi-sepia.vercel.app";
@@ -160,8 +178,17 @@ export default function Friends({
           <p className="fnEmpty">No activity yet.</p>
         ) : (
           notifications.map((n) => (
-            <div key={n.id} className="fnActivityCard">
-              <p>{n.text}</p>
+            <div key={n.id} className={`fnActivityCard${n.read ? "" : " fnActivityUnread"}`}>
+              <div className="fnActivityAvatar">
+                {n.senderProfilePhotoUrl
+                  ? <img src={n.senderProfilePhotoUrl} alt="" />
+                  : <span>{(n.senderUsername || "?").charAt(0).toUpperCase()}</span>}
+                <span className="fnActivityIcon">{notifIcon(n.type)}</span>
+              </div>
+              <div className="fnActivityBody">
+                <p className="fnActivityText">{n.text}</p>
+                <p className="fnActivityTime">{timeAgo(n.createdAt)}</p>
+              </div>
             </div>
           ))
         )}

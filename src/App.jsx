@@ -371,21 +371,27 @@ const [streak, setStreak] = useState(0);
         createdAt: serverTimestamp(),
       });
 
-      const notificationText =
-        postType === "tutorial"
-          ? `${username} shared a tutorial on ${skill}`
-          : `${username} uploaded progress in ${skill}`;
-
-      for (const friendId of friends) {
-        await addDoc(collection(db, "notifications"), {
-          userId: friendId,
-          senderUsername: username,
-          type: "post",
-          text: notificationText,
-          postId: postRef.id,
-          createdAt: serverTimestamp(),
-          read: false,
-        });
+      if (postType !== "tutorial") {
+        const notificationText = `${firstName || username} posted new progress in ${skill}`;
+        for (const friendId of friends) {
+          await addDoc(collection(db, "notifications"), {
+            userId: friendId,
+            senderUsername: username,
+            senderName: firstName || username,
+            senderProfilePhotoUrl: profilePhotoUrl || "",
+            type: "new_post",
+            text: notificationText,
+            postId: postRef.id,
+            createdAt: serverTimestamp(),
+            read: false,
+          });
+          sendPushNotification(
+            friendId,
+            `${firstName || username} posted`,
+            notificationText,
+            "/?tab=friends"
+          );
+        }
       }
 
       const today = new Date().toDateString();
@@ -538,8 +544,10 @@ const currentUserData = currentUserSnap.data();
 await addDoc(collection(db, "notifications"), {
   userId: friendUid,
   senderUsername: currentUserData.username,
+  senderName: currentUserData.firstName || currentUserData.username,
+  senderProfilePhotoUrl: currentUserData.profilePhotoUrl || "",
   type: "friend_request",
-  text: `${currentUserData.username} sent you a friend request`,
+  text: `${currentUserData.firstName || currentUserData.username} sent you a friend request`,
   createdAt: serverTimestamp(),
   read: false,
 });
@@ -547,7 +555,7 @@ await addDoc(collection(db, "notifications"), {
   sendPushNotification(
     friendUid,
     "New friend request",
-    `${currentUserData.username} sent you a friend request`,
+    `${currentUserData.firstName || currentUserData.username} sent you a friend request`,
     "/?tab=friends"
   );
 
@@ -583,8 +591,11 @@ async function handleAcceptFriendRequest(requesterUid) {
 
   await addDoc(collection(db, "notifications"), {
     userId: requesterUid,
-    type: "friend_accept",
-    text: `${username} accepted your friend request`,
+    senderUsername: username,
+    senderName: firstName || username,
+    senderProfilePhotoUrl: profilePhotoUrl || "",
+    type: "friend_accepted",
+    text: `${firstName || username} accepted your friend request`,
     createdAt: serverTimestamp(),
     read: false,
   });
@@ -592,7 +603,7 @@ async function handleAcceptFriendRequest(requesterUid) {
   sendPushNotification(
     requesterUid,
     "Friend request accepted",
-    `${username} is now your friend on Habi`,
+    `${firstName || username} accepted your friend request`,
     "/?tab=friends"
   );
 
