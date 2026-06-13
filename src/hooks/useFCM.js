@@ -5,27 +5,40 @@ import { messaging, db } from "../firebase";
 
 export function useFCM(currentUser, onTabSwitch) {
   useEffect(() => {
+    console.log("[FCM] hook fired — currentUser:", currentUser?.uid ?? "null");
     if (!currentUser) return;
 
     let unsubscribe = () => {};
 
     (async () => {
       try {
-        if (!(await isSupported())) return;
+        const supported = await isSupported();
+        console.log("[FCM] isSupported:", supported);
+        if (!supported) return;
 
+        console.log("[FCM] requesting notification permission…");
         const permission = await Notification.requestPermission();
+        console.log("[FCM] permission result:", permission);
         if (permission !== "granted") return;
 
-        const token = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FCM_VAPID_KEY,
-        });
+        const vapidKey = import.meta.env.VITE_FCM_VAPID_KEY;
+        console.log("[FCM] VAPID key present:", !!vapidKey);
+        console.log("[FCM] messaging instance:", !!messaging);
+        if (!messaging) {
+          console.warn("[FCM] messaging not initialised yet — skipping");
+          return;
+        }
+
+        const token = await getToken(messaging, { vapidKey });
+        console.log("[FCM] token obtained:", !!token);
 
         if (token) {
           await updateDoc(doc(db, "users", currentUser.uid), { fcmToken: token });
+          console.log("[FCM] token saved to Firestore");
         }
 
         // Foreground messages: show a native notification
-        unsubscribe = onMessage(messaging, (payload) => {
+        unsubscribe = onMessage(messaging, (payload) => { // messaging is non-null here
           const title = payload.notification?.title || "Habi";
           const body  = payload.notification?.body  || "";
           const link  = payload.data?.link || "/";
@@ -40,8 +53,7 @@ export function useFCM(currentUser, onTabSwitch) {
           }
         });
       } catch (err) {
-        // Non-fatal: FCM unavailable in this environment
-        console.warn("FCM init skipped:", err.message);
+        console.error("[FCM] init error:", err.code ?? "", err.message, err);
       }
     })();
 

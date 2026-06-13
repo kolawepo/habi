@@ -13,7 +13,8 @@ import {
 } from "firebase/storage";
 
 import {
-  getMessaging
+  getMessaging,
+  isSupported as messagingIsSupported,
 } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -34,6 +35,11 @@ export const db = getFirestore(app);
 
 export const storage = getStorage(app);
 
-export const messaging = getMessaging(app);
+// getMessaging() throws in unsupported browsers (old Safari, Firefox without push).
+// Initialise lazily so a failure here doesn't break the whole app.
+export let messaging = null;
+messagingIsSupported().then((ok) => {
+  if (ok) messaging = getMessaging(app);
+}).catch(() => {});
 
 export default app;
