@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { isSupported, getToken, onMessage } from "firebase/messaging";
+import { isSupported, getToken, getMessaging, onMessage } from "firebase/messaging";
 import { doc, updateDoc } from "firebase/firestore";
-import { messaging, db } from "../firebase";
+import app, { db } from "../firebase";
 
 export function useFCM(currentUser, onTabSwitch) {
   useEffect(() => {
@@ -23,13 +23,11 @@ export function useFCM(currentUser, onTabSwitch) {
 
         const vapidKey = import.meta.env.VITE_FCM_VAPID_KEY;
         console.log("[FCM] VAPID key present:", !!vapidKey);
-        console.log("[FCM] messaging instance:", !!messaging);
-        if (!messaging) {
-          console.warn("[FCM] messaging not initialised yet — skipping");
-          return;
-        }
 
-        const token = await getToken(messaging, { vapidKey });
+        const m = getMessaging(app);
+        console.log("[FCM] messaging instance:", !!m);
+
+        const token = await getToken(m, { vapidKey });
         console.log("[FCM] token obtained:", !!token);
 
         if (token) {
@@ -38,7 +36,7 @@ export function useFCM(currentUser, onTabSwitch) {
         }
 
         // Foreground messages: show a native notification
-        unsubscribe = onMessage(messaging, (payload) => { // messaging is non-null here
+        unsubscribe = onMessage(m, (payload) => {
           const title = payload.notification?.title || "Habi";
           const body  = payload.notification?.body  || "";
           const link  = payload.data?.link || "/";
