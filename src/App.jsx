@@ -36,6 +36,9 @@ import {
 
 import { auth, db, storage } from "./firebase";
 
+import { useFCM } from "./hooks/useFCM";
+import { sendPushNotification } from "./utils/notify";
+
 import { BIBI, themes, goals } from "./data/appData";
 
 import {
@@ -56,7 +59,10 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("habi_darkMode") === "true");
 
-  const [tab, setTab] = useState("home");
+  const [tab, setTab] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("tab") || "home";
+  });
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -147,7 +153,17 @@ useEffect(() => {
 
 const [streak, setStreak] = useState(0);
 
+  const [likedPosts, setLikedPosts] = useState([]);
+
   const [sharedVideos, setSharedVideos] = useState([]);
+
+  // FCM: request permission, save token, handle foreground messages
+  function handleNotificationTabSwitch(link) {
+    const params = new URLSearchParams(link.split("?")[1] || "");
+    const t = params.get("tab");
+    if (t) setTab(t);
+  }
+  useFCM(currentUser, handleNotificationTabSwitch);
 
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [skillTheme, setSkillTheme] = useState(null);
@@ -386,6 +402,16 @@ const [streak, setStreak] = useState(0);
           lastPostDate: today,
         });
         setStreak(updatedStreak);
+
+        const MILESTONES = [7, 14, 30, 100];
+        if (MILESTONES.includes(updatedStreak)) {
+          sendPushNotification(
+            currentUser.uid,
+            `🔥 ${updatedStreak}-day streak!`,
+            "You're on a roll — keep going!",
+            "/?tab=streaks"
+          );
+        }
       }
 
       setUploadFile(null);
@@ -518,6 +544,13 @@ await addDoc(collection(db, "notifications"), {
   read: false,
 });
 
+  sendPushNotification(
+    friendUid,
+    "New friend request",
+    `${currentUserData.username} sent you a friend request`,
+    "/?tab=friends"
+  );
+
   console.log("Friend request saved in Firestore");
 
   alert("Friend request sent!");
@@ -549,12 +582,19 @@ async function handleAcceptFriendRequest(requesterUid) {
   });
 
   await addDoc(collection(db, "notifications"), {
-  userId: requesterUid,
-  type: "friend_accept",
-  text: `${username} accepted your friend request`,
-  createdAt: serverTimestamp(),
-  read: false,
-});
+    userId: requesterUid,
+    type: "friend_accept",
+    text: `${username} accepted your friend request`,
+    createdAt: serverTimestamp(),
+    read: false,
+  });
+
+  sendPushNotification(
+    requesterUid,
+    "Friend request accepted",
+    `${username} is now your friend on Habi`,
+    "/?tab=friends"
+  );
 
   setFriends((prev) => [...new Set([...prev, requesterUid])]);
   setFriendRequests((prev) => prev.filter((id) => id !== requesterUid));
@@ -610,6 +650,41 @@ async function handleRemoveFriend
       text: "",
       createdAt: serverTimestamp(),
     });
+
+    sendPushNotification(
+      recipientUid,
+      `${username} sent you a video`,
+      videoData.title,
+      "/?tab=messages"
+    );
+  }
+
+  async function handleLikePost(post) {
+    if (!currentUser || post.userId === currentUser.uid) return;
+    if (likedPosts.includes(post.id)) return;
+
+    setLikedPosts((prev) => [...prev, post.id]);
+
+    await updateDoc(doc(db, "posts", post.id), {
+      likes: arrayUnion(currentUser.uid),
+    });
+
+    await addDoc(collection(db, "notifications"), {
+      userId: post.userId,
+      senderUsername: username,
+      type: "post_like",
+      text: `${username} liked your post`,
+      postId: post.id,
+      createdAt: serverTimestamp(),
+      read: false,
+    });
+
+    sendPushNotification(
+      post.userId,
+      "New like 💜",
+      `${username} liked your post`,
+      "/?tab=friends"
+    );
   }
 
   async function handleSignOut() {
@@ -904,6 +979,8 @@ async function handleRemoveFriend
           onShareToFriend={handleSendDM}
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
+          handleLikePost={handleLikePost}
+          likedPosts={likedPosts}
           />
       )}
     </div>

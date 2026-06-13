@@ -50,6 +50,8 @@ export default function MainApp({
   allPosts,
   notifications,
   onShareToFriend,
+  handleLikePost,
+  likedPosts,
 }) {
   const [showSearch, setShowSearch] = useState(false);
 
@@ -84,6 +86,10 @@ export default function MainApp({
             handleAcceptFriendRequest={handleAcceptFriendRequest}
             handleDeclineFriendRequest={handleDeclineFriendRequest}
             setTab={setTab}
+            currentUser={currentUser}
+            username={username}
+            handleLikePost={handleLikePost}
+            likedPosts={likedPosts}
           />
         )}
 

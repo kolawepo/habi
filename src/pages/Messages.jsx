@@ -12,6 +12,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { sendPushNotification } from "../utils/notify";
 import Page from "../components/Page";
 
 export default function Messages({ currentUser, username }) {
@@ -77,18 +78,30 @@ export default function Messages({ currentUser, username }) {
 
   async function sendText() {
     if (!text.trim() || !selectedConvo || !currentUser) return;
+    const trimmed = text.trim();
     const convoRef = doc(db, "dms", selectedConvo.id);
     await setDoc(
       convoRef,
-      { lastMessage: text.trim(), lastMessageAt: serverTimestamp() },
+      { lastMessage: trimmed, lastMessageAt: serverTimestamp() },
       { merge: true }
     );
     await addDoc(collection(db, "dms", selectedConvo.id, "messages"), {
       senderId: currentUser.uid,
       senderUsername: username,
-      text: text.trim(),
+      text: trimmed,
       createdAt: serverTimestamp(),
     });
+
+    const otherUid = selectedConvo.participants.find((uid) => uid !== currentUser.uid);
+    if (otherUid) {
+      sendPushNotification(
+        otherUid,
+        `${username} sent you a message`,
+        trimmed.length > 80 ? trimmed.slice(0, 80) + "…" : trimmed,
+        "/?tab=messages"
+      );
+    }
+
     setText("");
   }
 

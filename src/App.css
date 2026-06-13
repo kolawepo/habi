@@ -2589,10 +2589,36 @@ textarea::placeholder {
 }
 
 .fpActivityCaption {
-  padding: 10px 16px 14px;
+  padding: 10px 16px 4px;
   font-size: 14px;
   color: #444;
   line-height: 1.45;
+}
+
+.fpActivityActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 14px;
+}
+
+.fpLikeBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px 0;
+  transition: transform 0.15s;
+}
+.fpLikeBtn:not(:disabled):active { transform: scale(1.25); }
+.fpLikeBtn:disabled { cursor: default; opacity: 0.6; }
+.fpLikeCount {
+  font-size: 13px;
+  color: var(--text-secondary, #777);
+  font-weight: 600;
 }
 
 .fpInviteCard {

@@ -75,6 +75,10 @@ export default function Friends({
   handleAcceptFriendRequest,
   handleDeclineFriendRequest,
   setTab,
+  currentUser,
+  username,
+  handleLikePost,
+  likedPosts,
 }) {
   const [friendRequestProfiles, setFriendRequestProfiles] = useState([]);
   const [friendProfiles,        setFriendProfiles]        = useState([]);
@@ -298,6 +302,20 @@ export default function Friends({
                     {post.caption && (
                       <p className="fpActivityCaption">{post.caption}</p>
                     )}
+
+                    <div className="fpActivityActions">
+                      <button
+                        className={`fpLikeBtn${likedPosts?.includes(post.id) ? " fpLikeActive" : ""}`}
+                        onClick={() => handleLikePost?.(post)}
+                        disabled={likedPosts?.includes(post.id) || post.userId === currentUser?.uid}
+                        aria-label="Like post"
+                      >
+                        {likedPosts?.includes(post.id) ? "💜" : "🤍"}
+                        {post.likes?.length > 0 && (
+                          <span className="fpLikeCount">{post.likes.length}</span>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
