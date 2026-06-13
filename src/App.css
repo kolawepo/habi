@@ -887,6 +887,18 @@ textarea {
   height: calc(100% + 60px);
 }
 
+/* Transparent strip at the bottom of each slide that always intercepts vertical
+   swipe gestures, even after the iframe has claimed touch handling. */
+.slideSwipeZone {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  z-index: 3;
+  touch-action: pan-y;
+  pointer-events: all;
+}
 
 .pausedPlayIndicator {
   position: absolute;

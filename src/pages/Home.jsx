@@ -441,6 +441,8 @@ export default function Home({
       ytCmd(f, "pauseVideo");
       isPausedRef.current = true;
     }
+    // Return focus to the scroll container so swipe still works after tapping
+    setTimeout(() => feedEl.current?.focus(), 300);
   }
 
   // ── Mute toggle ────────────────────────────────────────────────────────────
@@ -524,7 +526,7 @@ export default function Home({
         <div className="feedEmptyState">{emptyMsg}</div>
       ) : (
       /* Full-screen snap feed */
-      <div className="tiktokFeed" ref={feedEl}>
+      <div className="tiktokFeed" ref={feedEl} tabIndex={-1}>
         {feed.map((item, idx) => {
           const isYt     = item._type === "youtube";
           const isFailed = isYt && failed.has(item.videoId);
@@ -559,12 +561,19 @@ export default function Home({
                       allow="autoplay; encrypted-media"
                       allowFullScreen
                     />
-                    {/* Overlay covers the full slide on all devices, blocking YouTube's
-                        bottom bar from capturing touch events that should scroll the feed. */}
+                    {/* Overlay covers the full slide. onTouchStart blurs the iframe
+                        before the gesture reaches it, restoring scroll-snap swiping. */}
                     <div
                       style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
+                      onTouchStart={() => {
+                        document.activeElement?.blur();
+                        feedEl.current?.focus();
+                      }}
                       onClick={() => togglePlayPause(item.videoId)}
                     />
+                    {/* Bottom swipe zone: always captures vertical pan gestures even
+                        when the iframe has claimed touch events after an interaction. */}
+                    <div className="slideSwipeZone" />
                   </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
