@@ -3,6 +3,54 @@ import { useState } from "react";
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const isStandalone = window.navigator.standalone === true;
 
+const STEPS = [
+  {
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="5"  cy="12" r="2"/>
+        <circle cx="12" cy="12" r="2"/>
+        <circle cx="19" cy="12" r="2"/>
+      </svg>
+    ),
+    iconBg: "#e5e5ea",
+    iconColor: "#3a3a3c",
+    label: "Tap",
+    chip: "···",
+    chipStyle: "dots",
+    detail: "next to the address bar",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+        <polyline points="16 6 12 2 8 6"/>
+        <line x1="12" y1="2" x2="12" y2="15"/>
+      </svg>
+    ),
+    iconBg: "#007aff",
+    iconColor: "#fff",
+    label: "Tap",
+    chip: "Share",
+    chipStyle: "share",
+    detail: "from the menu",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <line x1="12" y1="8"  x2="12" y2="16"/>
+        <line x1="8"  y1="12" x2="16" y2="12"/>
+      </svg>
+    ),
+    iconBg: "#e5e5ea",
+    iconColor: "#3a3a3c",
+    label: "Tap",
+    chip: "Add to Home Screen",
+    chipStyle: "add",
+    detail: "",
+  },
+];
+
 export default function IOSInstallPrompt() {
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem("habi_ios_prompt_dismissed") === "1"
@@ -18,54 +66,42 @@ export default function IOSInstallPrompt() {
   return (
     <div className="iosPromptOverlay" onClick={dismiss}>
       <div className="iosPromptCard" onClick={(e) => e.stopPropagation()}>
-        {/* App icon + heading */}
+
         <div className="iosPromptTop">
           <img src="/bibi.png" alt="habi" className="iosPromptAppIcon" />
           <div>
             <p className="iosPromptHeading">Add habi to your Home Screen</p>
-            <p className="iosPromptSub">Required for push notifications</p>
+            <p className="iosPromptSub">Needed for push notifications</p>
           </div>
         </div>
 
-        {/* Steps */}
         <div className="iosPromptSteps">
-          <div className="iosPromptStep">
-            <div className="iosPromptStepNum">1</div>
-            <div className="iosPromptStepBody">
-              <p className="iosPromptStepLabel">Tap the Share button</p>
-              <div className="iosShareChip">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" transform="rotate(-90 12 12)"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
-                  <rect x="3" y="14" width="18" height="8" rx="2"/>
-                </svg>
-                <span>Share</span>
+          {STEPS.map((step, i) => (
+            <div className="iosPromptStep" key={i}>
+              <div
+                className="iosPromptStepIcon"
+                style={{ background: step.iconBg, color: step.iconColor }}
+              >
+                {step.icon}
+              </div>
+              <div className="iosPromptStepBody">
+                <span className="iosPromptStepNum">{i + 1}</span>
+                <span className="iosPromptStepLabel">{step.label}</span>
+                <span className={`iosPromptChip iosPromptChip--${step.chipStyle}`}>
+                  {step.chip}
+                </span>
+                {step.detail && (
+                  <span className="iosPromptStepDetail">{step.detail}</span>
+                )}
               </div>
             </div>
-          </div>
-
-          <div className="iosPromptStep">
-            <div className="iosPromptStepNum">2</div>
-            <div className="iosPromptStepBody">
-              <p className="iosPromptStepLabel">Select</p>
-              <div className="iosAddChip">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                <span>Add to Home Screen</span>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
         <button className="iosPromptGotIt" onClick={dismiss}>Got it</button>
       </div>
 
-      {/* Animated arrow pointing at Safari share button */}
-      <div className="iosPromptArrowWrap">
-        <div className="iosPromptArrow">↓</div>
-      </div>
+      <div className="iosPromptArrowWrap" aria-hidden="true">↓</div>
     </div>
   );
 }
