@@ -106,8 +106,6 @@ export default function Home({
   const isDraggingRef          = useRef(false);
   const isPausedRef            = useRef(false);
   const pendingSkillRestoreRef = useRef(false);
-  const videoPlayingRef        = useRef(false);
-  const stuckTimerRef          = useRef(null);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -348,32 +346,14 @@ export default function Home({
   useEffect(() => {
     setVidCurrentTime(0);
     setVidDuration(0);
-    clearTimeout(stuckTimerRef.current);
-    videoPlayingRef.current = false;
 
     const item = feedRef.current[activeIndex];
     if (!item || item._type !== "youtube") return;
-
-    console.log(`[Feed] active video — index: ${activeIndex}, videoId: ${item.videoId}, title: "${item.title}", skill: "${item.skill}"`);
-    console.log(`[Feed] embed URL: https://www.youtube.com/embed/${item.videoId}?controls=1`);
 
     const f = iframeRefs.current[item.videoId];
     if (f && readySet.current.has(item.videoId)) {
       if (mutedRef.current) ytCmd(f, "mute");
       ytCmd(f, "playVideo");
-    }
-
-    // Auto-skip only on mobile — desktop autoplay works fine and the timer
-    // causes unwanted feed advances without user input.
-    if (isMobile) {
-      stuckTimerRef.current = setTimeout(() => {
-        if (videoPlayingRef.current) return;
-        const current = feedRef.current[activeIdxRef.current];
-        console.warn(`[Feed] auto-skip fired — videoId: ${current?.videoId}, title: "${current?.title}" never played after 2s`);
-        const next = activeIdxRef.current + 1;
-        if (feedEl.current && next < feedRef.current.length)
-          feedEl.current.scrollTo({ top: next * (feedEl.current.clientHeight || innerHeight), behavior: "smooth" });
-      }, 2000);
     }
   }, [activeIndex]); // eslint-disable-line
 
@@ -411,12 +391,8 @@ export default function Home({
       }
 
       if (d.event === "onStateChange") {
-        if (d.info === 1) {
-          isPausedRef.current = false;  // playing
-          videoPlayingRef.current = true;
-          clearTimeout(stuckTimerRef.current); // video started — cancel stuck timer
-        }
-        if (d.info === 2) isPausedRef.current = true; // paused
+        if (d.info === 1) isPausedRef.current = false; // playing
+        if (d.info === 2) isPausedRef.current = true;  // paused
       }
 
       if (d.event === "infoDelivery" && d.info) {
@@ -526,7 +502,7 @@ export default function Home({
         <div className="feedEmptyState">{emptyMsg}</div>
       ) : (
       /* Full-screen snap feed */
-      <div className="tiktokFeed" ref={feedEl} tabIndex={-1}>
+      <div className="tiktokFeed" ref={feedEl} tabIndex={-1} style={{ touchAction: "pan-y" }}>
         {feed.map((item, idx) => {
           const isYt     = item._type === "youtube";
           const isFailed = isYt && failed.has(item.videoId);
@@ -542,6 +518,13 @@ export default function Home({
                 if (old && old !== el) obsRef.current?.unobserve(old);
                 slideRefs.current[idx] = el;
                 if (el) obsRef.current?.observe(el);
+              }}
+              onTouchStart={() => {
+                // Blur any focused iframe so vertical swipes reach the scroll container
+                if (document.activeElement?.tagName === "IFRAME") {
+                  document.activeElement.blur();
+                }
+                feedEl.current?.focus();
               }}
             >
               {/* Media */}
