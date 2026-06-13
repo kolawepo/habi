@@ -8,14 +8,14 @@ import ShareModal from "../components/ShareModal";
 function ytSrc(videoId) {
   return (
     `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
-    `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
+    `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
   );
 }
 
 function ytSrcSound(videoId) {
   return (
     `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
-    `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`
+    `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
   );
 }
 
@@ -521,17 +521,17 @@ export default function Home({
                         if (el) iframeRefs.current[item.videoId] = el;
                         else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
                       }}
-                      className="tiktokSlideMedia"
+                      className="tiktokSlideMedia tiktokYtFrame"
                       src={ytSrcSound(item.videoId)}
                       allow="autoplay; encrypted-media"
                       allowFullScreen
                     />
-                    {!isMobile && (
-                      <div
-                        style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
-                        onClick={() => togglePlayPause(item.videoId)}
-                      />
-                    )}
+                    {/* Overlay covers the full slide on all devices, blocking YouTube's
+                        bottom bar from capturing touch events that should scroll the feed. */}
+                    <div
+                      style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
+                      onClick={() => togglePlayPause(item.videoId)}
+                    />
                   </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />

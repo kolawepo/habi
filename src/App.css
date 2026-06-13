@@ -881,6 +881,12 @@ textarea {
   display: block;
 }
 
+/* YouTube iframe: extend height to push the "Watch on YouTube" bar below the
+   visible area. The slide has overflow:hidden so it's clipped invisibly. */
+.tiktokYtFrame {
+  height: calc(100% + 60px);
+}
+
 
 .pausedPlayIndicator {
   position: absolute;
