@@ -139,7 +139,7 @@ export default function Messages({ currentUser, username, friends }) {
     const convoRef = doc(db, "dms", selectedConvo.id);
     await setDoc(
       convoRef,
-      { lastMessage: trimmed, lastMessageAt: serverTimestamp() },
+      { participants: selectedConvo.participants, lastMessage: trimmed, lastMessageAt: serverTimestamp() },
       { merge: true }
     );
     await addDoc(collection(db, "dms", selectedConvo.id, "messages"), {
@@ -177,7 +177,7 @@ export default function Messages({ currentUser, username, friends }) {
   // ── Thread view ───────────────────────────────────────────────────────────
   if (selectedConvo) {
     const otherUid = selectedConvo.participants.find((uid) => uid !== currentUser?.uid);
-    const other = profiles[otherUid] || {};
+    const other = profiles[otherUid] || friendProfiles.find((f) => f.uid === otherUid) || {};
 
     return (
       <div className="dmThreadPage">
