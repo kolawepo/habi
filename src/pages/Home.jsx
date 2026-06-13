@@ -363,15 +363,18 @@ export default function Home({
       ytCmd(f, "playVideo");
     }
 
-    // Auto-skip if the video hasn't started playing after 2 seconds (stuck/unresponsive)
-    stuckTimerRef.current = setTimeout(() => {
-      if (videoPlayingRef.current) return;
-      const current = feedRef.current[activeIdxRef.current];
-      console.warn(`[Feed] auto-skip fired — videoId: ${current?.videoId}, title: "${current?.title}" never played after 2s`);
-      const next = activeIdxRef.current + 1;
-      if (feedEl.current && next < feedRef.current.length)
-        feedEl.current.scrollTo({ top: next * (feedEl.current.clientHeight || innerHeight), behavior: "smooth" });
-    }, 2000);
+    // Auto-skip only on mobile — desktop autoplay works fine and the timer
+    // causes unwanted feed advances without user input.
+    if (isMobile) {
+      stuckTimerRef.current = setTimeout(() => {
+        if (videoPlayingRef.current) return;
+        const current = feedRef.current[activeIdxRef.current];
+        console.warn(`[Feed] auto-skip fired — videoId: ${current?.videoId}, title: "${current?.title}" never played after 2s`);
+        const next = activeIdxRef.current + 1;
+        if (feedEl.current && next < feedRef.current.length)
+          feedEl.current.scrollTo({ top: next * (feedEl.current.clientHeight || innerHeight), behavior: "smooth" });
+      }, 2000);
+    }
   }, [activeIndex]); // eslint-disable-line
 
   // ── Auto-skip unembeddable ─────────────────────────────────────────────────
