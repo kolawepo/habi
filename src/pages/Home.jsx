@@ -51,16 +51,23 @@ function pickStartIdx(skill, feedLen) {
 
 const TTL = 24 * 60 * 60 * 1000;
 
+const CACHE_KEY = s => `yt_v2_${s}`;
+
 function loadCache(skill) {
   try {
-    const { videos, ts } = JSON.parse(localStorage.getItem(`yt_${skill}`) || "{}");
-    if (!videos?.length || Date.now() - ts > TTL) { localStorage.removeItem(`yt_${skill}`); return null; }
+    const { videos, ts } = JSON.parse(localStorage.getItem(CACHE_KEY(skill)) || "{}");
+    if (!videos?.length || Date.now() - ts > TTL) { localStorage.removeItem(CACHE_KEY(skill)); return null; }
     return videos;
   } catch { return null; }
 }
 
 function saveCache(skill, videos) {
-  try { localStorage.setItem(`yt_${skill}`, JSON.stringify({ videos, ts: Date.now() })); } catch {}
+  try { localStorage.setItem(CACHE_KEY(skill), JSON.stringify({ videos, ts: Date.now() })); } catch {}
+}
+
+function isShort(item) {
+  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""}`;
+  return /#shorts/i.test(text);
 }
 
 
@@ -99,6 +106,8 @@ export default function Home({
   const isDraggingRef          = useRef(false);
   const isPausedRef            = useRef(false);
   const pendingSkillRestoreRef = useRef(false);
+  const videoPlayingRef        = useRef(false);
+  const stuckTimerRef          = useRef(null);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -137,7 +146,7 @@ export default function Home({
       pageToken = data.nextPageToken || null;
 
       const batch = (data.items || [])
-        .filter(i => i.id?.videoId && !seen.has(i.id.videoId))
+        .filter(i => i.id?.videoId && !seen.has(i.id.videoId) && !isShort(i))
         .map(i => { seen.add(i.id.videoId); return {
           videoId: i.id.videoId, title: i.snippet.title,
           creator: i.snippet.channelTitle, skill,
@@ -189,7 +198,7 @@ export default function Home({
       pageToken = data.nextPageToken || null;
 
       const batch = (data.items || [])
-        .filter(i => i.id?.videoId && !seen.has(i.id.videoId))
+        .filter(i => i.id?.videoId && !seen.has(i.id.videoId) && !isShort(i))
         .map(i => { seen.add(i.id.videoId); return {
           videoId: i.id.videoId, title: i.snippet.title,
           creator: i.snippet.channelTitle, skill: activeSkill,
@@ -339,13 +348,25 @@ export default function Home({
   useEffect(() => {
     setVidCurrentTime(0);
     setVidDuration(0);
+    clearTimeout(stuckTimerRef.current);
+    videoPlayingRef.current = false;
+
     const item = feedRef.current[activeIndex];
     if (!item || item._type !== "youtube") return;
+
     const f = iframeRefs.current[item.videoId];
     if (f && readySet.current.has(item.videoId)) {
       if (mutedRef.current) ytCmd(f, "mute");
       ytCmd(f, "playVideo");
     }
+
+    // Auto-skip if the video hasn't started playing after 5 seconds (stuck/unresponsive)
+    stuckTimerRef.current = setTimeout(() => {
+      if (videoPlayingRef.current) return;
+      const next = activeIdxRef.current + 1;
+      if (feedEl.current && next < feedRef.current.length)
+        feedEl.current.scrollTo({ top: next * (feedEl.current.clientHeight || innerHeight), behavior: "smooth" });
+    }, 5000);
   }, [activeIndex]); // eslint-disable-line
 
   // ── Auto-skip unembeddable ─────────────────────────────────────────────────
@@ -382,8 +403,12 @@ export default function Home({
       }
 
       if (d.event === "onStateChange") {
-        if (d.info === 1) isPausedRef.current = false; // playing
-        if (d.info === 2) isPausedRef.current = true;  // paused
+        if (d.info === 1) {
+          isPausedRef.current = false;  // playing
+          videoPlayingRef.current = true;
+          clearTimeout(stuckTimerRef.current); // video started — cancel stuck timer
+        }
+        if (d.info === 2) isPausedRef.current = true; // paused
       }
 
       if (d.event === "infoDelivery" && d.info) {
