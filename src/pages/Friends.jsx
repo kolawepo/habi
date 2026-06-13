@@ -1,65 +1,45 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import Page from "../components/Page";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 const INVITE_URL  = "https://habi-sepia.vercel.app";
 const INVITE_TEXT = "Join me on Habi — the app for learning new skills! Sign up here: " + INVITE_URL;
 
-// Works on HTTP (execCommand) and HTTPS (Clipboard API)
 async function copyText(text) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
   } else {
-    // Fallback for HTTP / older mobile browsers
     const el = Object.assign(document.createElement("textarea"), {
       value: text,
       style: "position:fixed;top:-9999px;left:-9999px;opacity:0",
     });
     document.body.appendChild(el);
-    el.focus();
-    el.select();
+    el.focus(); el.select();
     document.execCommand("copy");
     document.body.removeChild(el);
   }
 }
 
 async function shareInvite(setToast) {
-  console.log("[Habi] shareInvite called");
-  console.log("[Habi] navigator.share:", typeof navigator.share);
-  console.log("[Habi] navigator.clipboard:", typeof navigator.clipboard);
-
   try {
     if (navigator.share) {
-      console.log("[Habi] Opening share sheet…");
       await navigator.share({ title: "Habi", text: INVITE_TEXT, url: INVITE_URL });
-      console.log("[Habi] Shared successfully");
     } else {
-      console.log("[Habi] No share API — copying to clipboard");
       await copyText(INVITE_TEXT);
       setToast(true);
       setTimeout(() => setToast(false), 2500);
     }
   } catch (err) {
-    console.error("[Habi] shareInvite error:", err.name, err.message);
-    if (err.name === "AbortError") {
-      // User dismissed the share sheet — that's fine, do nothing
-      return;
-    }
-    // Share failed for another reason — fall back to clipboard
+    if (err.name === "AbortError") return;
     try {
-      console.log("[Habi] Share failed, falling back to clipboard");
       await copyText(INVITE_TEXT);
       setToast(true);
       setTimeout(() => setToast(false), 2500);
-    } catch (clipErr) {
-      console.error("[Habi] Clipboard fallback failed:", clipErr.name, clipErr.message);
-    }
+    } catch {}
   }
 }
 
-// Online = lastSeen within the last 5 minutes
 function isOnline(lastSeen) {
   if (!lastSeen) return false;
   const ts = lastSeen.toDate ? lastSeen.toDate() : new Date(lastSeen);
@@ -115,11 +95,16 @@ export default function Friends({
     load();
   }, [friends]);
 
+  // Progress posts only — no tutorials
+  const progressPosts = friendPosts.filter((p) => p.postType !== "tutorial");
+
   const selectedPosts = selectedFriend
     ? allPosts.filter((p) => p.userId === selectedFriend.uid)
     : [];
 
-  // ── Notifications portal ──────────────────────────────────────────────────
+  const unreadCount = notifications.length + friendRequestProfiles.length;
+
+  // ── Notifications panel ───────────────────────────────────────────────────
   const notifPortal = showRequests && createPortal(
     <div className="fnOverlay" onClick={() => setShowRequests(false)}>
       <div className="fnPanel" onClick={(e) => e.stopPropagation()}>
@@ -171,7 +156,7 @@ export default function Friends({
     document.body
   );
 
-  // ── Friend profile modal portal ───────────────────────────────────────────
+  // ── Friend profile modal ──────────────────────────────────────────────────
   const profilePortal = selectedFriend && createPortal(
     <div className="friendProfileModal" onClick={() => setSelectedFriend(null)}>
       <div className="friendProfileSheet" onClick={(e) => e.stopPropagation()}>
@@ -187,7 +172,7 @@ export default function Friends({
         <p>@{selectedFriend.username}</p>
 
         <div className="friendProfileStats">
-          <div><b>{selectedPosts.length}</b><span>Posts</span></div>
+          <div><b>{selectedPosts.filter(p => p.postType !== "tutorial").length}</b><span>Posts</span></div>
           <div><b>{selectedFriend.streak || 0}</b><span>Streak</span></div>
         </div>
 
@@ -215,115 +200,135 @@ export default function Friends({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Page title="Friends">
-      {/* Bell */}
-      <button className="friendBellButton friendsBellFloat" onClick={() => setShowRequests(true)}>
-        🔔
-        {notifications.length > 0 && (
-          <span className="friendBellBadge">{notifications.length}</span>
+    <div className="friendsPage">
+      {/* Top bar */}
+      <div className="friendsTopBar">
+        <h1 className="friendsTitle">Friends</h1>
+        <button className="friendsBellBtn" onClick={() => setShowRequests(true)}>
+          🔔
+          {unreadCount > 0 && (
+            <span className="friendsBellBadge">{unreadCount}</span>
+          )}
+        </button>
+      </div>
+
+      <div className="friendsScroll">
+        {/* Stories row */}
+        {friendProfiles.length > 0 ? (
+          <div className="storiesRow">
+            {friendProfiles.map((friend) => (
+              <button key={friend.uid} className="storyItem" onClick={() => setSelectedFriend(friend)}>
+                <div className="storyAvatarWrap">
+                  <div className="storyAvatar">
+                    {friend.profilePhotoUrl
+                      ? <img src={friend.profilePhotoUrl} alt="" />
+                      : <span>{(friend.username || "?").charAt(0).toUpperCase()}</span>}
+                  </div>
+                  {isOnline(friend.lastSeen) && <div className="storyOnlineDot" />}
+                </div>
+                <p className="storyUsername">
+                  {friend.firstName || friend.name?.split(" ")[0] || friend.username}
+                </p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="friendsEmptyHero">
+            <p className="friendsEmptyText">No friends yet</p>
+            <p className="friendsEmptyHint">Tap 🔍 to find people</p>
+          </div>
         )}
-      </button>
 
-      {/* fpInner: flex column so invite card is pushed to bottom when content is short */}
-      <div className="fpInner">
-        <div className="fpScrollable">
-          {/* ── Your Friends list ── */}
-          <div className="fpSection">
-            <h3 className="fpSectionTitle">
-              Your Friends{friendProfiles.length > 0 ? ` (${friendProfiles.length})` : ""}
-            </h3>
+        <div className="igDivider" />
 
-            {friendProfiles.length === 0 ? (
-              <p className="fpEmpty">No friends yet — tap 🔍 to find people</p>
-            ) : (
-              <div className="fpFriendList">
-                {friendProfiles.map((friend) => (
-                  <div key={friend.uid} className="fpFriendRow">
-                    <button className="fpAvatarWrap" onClick={() => setSelectedFriend(friend)}>
-                      <div className="fpAvatar">
-                        {friend.profilePhotoUrl
-                          ? <img src={friend.profilePhotoUrl} alt="" />
-                          : (friend.username || "?").charAt(0).toUpperCase()}
+        {/* Instagram-style feed */}
+        {progressPosts.length === 0 ? (
+          friends.length > 0 && (
+            <p className="igEmptyFeed">Your friends haven't posted yet 👀</p>
+          )
+        ) : (
+          <div className="igFeed">
+            {progressPosts.map((post) => {
+              const isLiked = likedPosts?.includes(post.id);
+              const likeCount = post.likes?.length ?? 0;
+              const poster = friendProfiles.find((f) => f.uid === post.userId);
+
+              return (
+                <div key={post.id} className="igPost">
+                  {/* Header */}
+                  <div className="igPostHeader">
+                    <button
+                      className="igPostAvatarBtn"
+                      onClick={() => poster && setSelectedFriend(poster)}
+                    >
+                      <div className="igPostAvatar">
+                        {post.profilePhotoUrl
+                          ? <img src={post.profilePhotoUrl} alt="" />
+                          : <span>{(post.username || "?").charAt(0).toUpperCase()}</span>}
                       </div>
-                      {isOnline(friend.lastSeen) && <span className="fpOnlineDot" />}
                     </button>
+                    <div className="igPostUser">
+                      <p className="igPostUsername">
+                        {post.firstName || post.name?.split(" ")[0] || post.username}
+                      </p>
+                      <p className="igPostSkill">{post.skill}</p>
+                    </div>
+                  </div>
 
-                    <button className="fpFriendInfo" onClick={() => setSelectedFriend(friend)}>
-                      <p className="fpFriendName">
-                        {friend.firstName || friend.name?.split(" ")[0] || friend.username}
-                      </p>
-                      <p className="fpFriendHandle">
-                        @{friend.username}
-                        {isOnline(friend.lastSeen)
-                          ? <span className="fpOnlineLabel"> · Online</span>
-                          : null}
-                      </p>
+                  {/* Media */}
+                  {post.mediaType?.startsWith("video") ? (
+                    <video
+                      src={post.mediaUrl}
+                      className="igPostMedia"
+                      controls
+                      playsInline
+                    />
+                  ) : (
+                    <img src={post.mediaUrl} alt="post" className="igPostMedia" />
+                  )}
+
+                  {/* Actions */}
+                  <div className="igPostActions">
+                    <button
+                      className={`igLikeBtn${isLiked ? " igLikeActive" : ""}`}
+                      onClick={() => handleLikePost?.(post)}
+                      disabled={isLiked || post.userId === currentUser?.uid}
+                      aria-label="Like"
+                    >
+                      {isLiked ? "❤️" : "🤍"}
                     </button>
-
-                    <button className="fpMsgBtn" onClick={() => setTab("messages")}>
+                    <button
+                      className="igMsgBtn"
+                      onClick={() => setTab("messages")}
+                      aria-label="Message"
+                    >
                       💬
                     </button>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* ── Friend Activity ── */}
-          <div className="fpSection">
-            <h3 className="fpSectionTitle">Friend Activity</h3>
-
-            {friendPosts.length === 0 ? (
-              <p className="fpEmpty">Your friends haven't posted yet 👀</p>
-            ) : (
-              <div className="fpActivityFeed">
-                {friendPosts.map((post) => (
-                  <div key={post.id} className="fpActivityCard">
-                    <div className="fpActivityHeader">
-                      <div className="fpAvatar fpActivityAvatar">
-                        {post.profilePhotoUrl
-                          ? <img src={post.profilePhotoUrl} alt="" />
-                          : (post.username || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="fpFriendName">
-                          {post.firstName || post.name?.split(" ")[0] || post.username}
+                  {/* Footer */}
+                  {(likeCount > 0 || post.caption) && (
+                    <div className="igPostFooter">
+                      {likeCount > 0 && (
+                        <p className="igLikeCount">
+                          {likeCount} {likeCount === 1 ? "like" : "likes"}
                         </p>
-                        <p className="fpFriendHandle">@{post.username} · {post.skill}</p>
-                      </div>
+                      )}
+                      {post.caption && (
+                        <p className="igCaption">
+                          <span className="igCaptionUser">@{post.username}</span>{" "}
+                          {post.caption}
+                        </p>
+                      )}
                     </div>
-
-                    {post.mediaType?.startsWith("video") ? (
-                      <video src={post.mediaUrl} className="fpActivityMedia" controls playsInline />
-                    ) : (
-                      <img src={post.mediaUrl} alt="post" className="fpActivityMedia" />
-                    )}
-
-                    {post.caption && (
-                      <p className="fpActivityCaption">{post.caption}</p>
-                    )}
-
-                    <div className="fpActivityActions">
-                      <button
-                        className={`fpLikeBtn${likedPosts?.includes(post.id) ? " fpLikeActive" : ""}`}
-                        onClick={() => handleLikePost?.(post)}
-                        disabled={likedPosts?.includes(post.id) || post.userId === currentUser?.uid}
-                        aria-label="Like post"
-                      >
-                        {likedPosts?.includes(post.id) ? "💜" : "🤍"}
-                        {post.likes?.length > 0 && (
-                          <span className="fpLikeCount">{post.likes.length}</span>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
 
-        {/* ── Invite Friends — stays at bottom, after all content ── */}
+        {/* Invite card — bottom of feed */}
         <button className="fpInviteCard" onClick={() => shareInvite(setToast)}>
           <p>Invite Friends</p>
           <p className="fpInviteSub">Share Habi and learn together →</p>
@@ -337,6 +342,6 @@ export default function Friends({
         <div className="fpToast">Link copied!</div>,
         document.body
       )}
-    </Page>
+    </div>
   );
 }

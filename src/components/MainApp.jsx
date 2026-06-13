@@ -109,7 +109,7 @@ export default function MainApp({
         {tab === "streaks" && <Streaks streak={streak} />}
 
         {tab === "messages" && (
-          <Messages currentUser={currentUser} username={username} />
+          <Messages currentUser={currentUser} username={username} friends={friends} />
         )}
 
         {tab === "profile" && (
