@@ -24,18 +24,24 @@ export default function Messages({ currentUser, username }) {
 
   useEffect(() => {
     if (!currentUser) return;
+    console.log("[Messages] subscribing to dms for uid:", currentUser.uid);
     const q = query(
       collection(db, "dms"),
       where("participants", "array-contains", currentUser.uid)
     );
-    return onSnapshot(q, (snap) => {
-      const convos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      convos.sort(
-        (a, b) =>
-          (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0)
-      );
-      setConversations(convos);
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        console.log("[Messages] dms snapshot — docs:", snap.docs.length);
+        const convos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        convos.sort(
+          (a, b) =>
+            (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0)
+        );
+        setConversations(convos);
+      },
+      (err) => console.error("[Messages] dms query failed:", err.code, err.message)
+    );
   }, [currentUser]);
 
   useEffect(() => {
@@ -67,13 +73,19 @@ export default function Messages({ currentUser, username }) {
 
   useEffect(() => {
     if (!selectedConvo) return;
+    console.log("[Messages] subscribing to thread:", selectedConvo.id);
     const q = query(
       collection(db, "dms", selectedConvo.id, "messages"),
       orderBy("createdAt", "asc")
     );
-    return onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        console.log("[Messages] thread snapshot — messages:", snap.docs.length);
+        setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (err) => console.error("[Messages] thread query failed:", err.code, err.message)
+    );
   }, [selectedConvo]);
 
   async function sendText() {
