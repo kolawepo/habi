@@ -1,0 +1,18 @@
+{
+  "name": "habi",
+  "short_name": "habi",
+  "description": "Build habits with friends",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0ece8",
+  "theme_color": "#f0ece8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/bibi.png",
+      "sizes": "1024x1536",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

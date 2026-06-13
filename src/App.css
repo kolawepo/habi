@@ -5230,3 +5230,46 @@ textarea::placeholder {
   font-weight: 700;
   cursor: pointer;
 }
+/* =========================
+   iOS INSTALL PROMPT
+========================= */
+
+.iosPromptBanner {
+  position: fixed;
+  bottom: 80px;
+  left: 12px;
+  right: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 40px 14px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+
+.iosPromptText {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.iosPromptIcon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  color: #007aff;
+}
+
+.iosPromptClose {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 4px;
+  cursor: pointer;
+}

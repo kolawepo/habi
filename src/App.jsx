@@ -51,6 +51,7 @@ import Splash from "./components/Splash";
 import Onboarding from "./components/Onboarding";
 import AuthScreen from "./components/AuthScreen";
 import MainApp from "./components/MainApp";
+import IOSInstallPrompt from "./components/IOSInstallPrompt";
 
 
 export default function App() {
@@ -994,6 +995,8 @@ async function handleRemoveFriend
           likedPosts={likedPosts}
           />
       )}
+
+      {screen === "main" && <IOSInstallPrompt />}
     </div>
   );
 }
