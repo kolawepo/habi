@@ -354,19 +354,24 @@ export default function Home({
     const item = feedRef.current[activeIndex];
     if (!item || item._type !== "youtube") return;
 
+    console.log(`[Feed] active video — index: ${activeIndex}, videoId: ${item.videoId}, title: "${item.title}", skill: "${item.skill}"`);
+    console.log(`[Feed] embed URL: https://www.youtube.com/embed/${item.videoId}?controls=1`);
+
     const f = iframeRefs.current[item.videoId];
     if (f && readySet.current.has(item.videoId)) {
       if (mutedRef.current) ytCmd(f, "mute");
       ytCmd(f, "playVideo");
     }
 
-    // Auto-skip if the video hasn't started playing after 5 seconds (stuck/unresponsive)
+    // Auto-skip if the video hasn't started playing after 2 seconds (stuck/unresponsive)
     stuckTimerRef.current = setTimeout(() => {
       if (videoPlayingRef.current) return;
+      const current = feedRef.current[activeIdxRef.current];
+      console.warn(`[Feed] auto-skip fired — videoId: ${current?.videoId}, title: "${current?.title}" never played after 2s`);
       const next = activeIdxRef.current + 1;
       if (feedEl.current && next < feedRef.current.length)
         feedEl.current.scrollTo({ top: next * (feedEl.current.clientHeight || innerHeight), behavior: "smooth" });
-    }, 5000);
+    }, 2000);
   }, [activeIndex]); // eslint-disable-line
 
   // ── Auto-skip unembeddable ─────────────────────────────────────────────────
