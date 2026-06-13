@@ -540,7 +540,7 @@ export default function Home({
                         else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
                       }}
                       className="tiktokSlideMedia tiktokYtFrame"
-                      src={ytSrcSound(item.videoId)}
+                      src={isMobile ? ytSrc(item.videoId) : ytSrcSound(item.videoId)}
                       allow="autoplay; encrypted-media"
                       allowFullScreen
                     />
