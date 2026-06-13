@@ -44,46 +44,23 @@ function saveCache(skill, videos) {
   try { localStorage.setItem(`yt_${skill}`, JSON.stringify({ videos, ts: Date.now() })); } catch {}
 }
 
-// ── Position persistence ───────────────────────────────────────────────────────
-
-const LS_SKILL_KEY = "habi_lastSkill";
-const lsIdxKey = s => `habi_idx_${s}`;
-
-function readSavedIdx(skill) {
-  const v = parseInt(localStorage.getItem(lsIdxKey(skill)), 10);
-  return isNaN(v) ? null : v;
-}
-function writeSavedIdx(skill, idx) {
-  try { localStorage.setItem(lsIdxKey(skill), String(idx)); } catch {}
-}
-function pickStartIdx(skill, feedLen) {
-  if (!feedLen) return 0;
-  const saved = readSavedIdx(skill);
-  if (saved !== null && saved < feedLen) return saved;
-  return feedLen > 1 ? Math.floor(Math.random() * feedLen) : 0;
-}
-
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function Home({
   firstName, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
-  friends, onShareToFriend, addMoreSkills, removeSkill,
+  friends, onShareToFriend, addMoreSkills,
 }) {
-  const [activeSkill, setActiveSkill] = useState(() => {
-    try { return localStorage.getItem(LS_SKILL_KEY) || (skills[0] || ""); }
-    catch { return skills[0] || ""; }
-  });
+  const [activeSkill, setActiveSkill] = useState(skills[0] || "");
   const [ytBySkill,   setYtBySkill]   = useState({});
   const [loading,     setLoading]     = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  const [muted,           setMuted]           = useState(false);
-  const [searchQuery,     setSearchQuery]     = useState("");
-  const [showSkillsSheet, setShowSkillsSheet] = useState(false);
+  const [muted,       setMuted]       = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [vidDuration,   setVidDuration]   = useState(0);
@@ -96,9 +73,8 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const isDraggingRef          = useRef(false);
-  const isPausedRef            = useRef(false);
-  const pendingSkillRestoreRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const isPausedRef   = useRef(false);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -232,10 +208,7 @@ export default function Home({
   }, [skills, YT_KEY]); // eslint-disable-line
 
   useEffect(() => {
-    if (skills.length && !skills.includes(activeSkill)) {
-      const saved = localStorage.getItem(LS_SKILL_KEY);
-      setActiveSkill((saved && skills.includes(saved)) ? saved : skills[0]);
-    }
+    if (skills.length && !skills.includes(activeSkill)) setActiveSkill(skills[0]);
   }, [skills]); // eslint-disable-line
 
   // Search: fetch YouTube results for the typed query (debounced 500 ms)
@@ -270,61 +243,17 @@ export default function Home({
   const feed = trimmedSearch ? searchResults : rawFeed;
   feedRef.current = feed;
 
-  // ── Save active skill ────────────────────────────────────────────────────
+  // ── Reset on skill or search change ───────────────────────────────────────
 
   useEffect(() => {
-    if (activeSkill) try { localStorage.setItem(LS_SKILL_KEY, activeSkill); } catch {}
-  }, [activeSkill]);
-
-  // ── Skill change: restore saved position or pick random ──────────────────
-
-  useEffect(() => {
-    const feedLen = feedRef.current.length;
-    if (feedLen > 0) {
-      const idx = pickStartIdx(activeSkill, feedLen);
-      setActiveIndex(idx);
-      feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
-      pendingSkillRestoreRef.current = false;
-    } else {
-      // Feed not cached yet — mark to restore once it loads
-      setActiveIndex(0);
-      feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
-      pendingSkillRestoreRef.current = true;
-    }
-  }, [activeSkill]); // eslint-disable-line
-
-  // ── Feed loaded async: apply deferred restore ────────────────────────────
-
-  useEffect(() => {
-    if (!pendingSkillRestoreRef.current) return;
-    const feedLen = feedRef.current.length;
-    if (!feedLen) return;
-    const idx = pickStartIdx(activeSkill, feedLen);
-    setActiveIndex(idx);
-    feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
-    pendingSkillRestoreRef.current = false;
-  }, [ytBySkill]); // eslint-disable-line
-
-  // ── Search change: scroll to top when entering; restore when clearing ────
-
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setActiveIndex(0);
-      feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
-    } else {
-      const feedLen = feedRef.current.length;
-      const idx = pickStartIdx(activeSkill, feedLen);
-      setActiveIndex(idx);
-      feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
-    }
+    setActiveIndex(0);
+    feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [searchQuery]); // eslint-disable-line
 
-  // ── Save video index per skill (not during search) ───────────────────────
-
   useEffect(() => {
-    if (!activeSkill || searchQuery.trim() || !feedRef.current.length) return;
-    writeSavedIdx(activeSkill, activeIndex);
-  }, [activeIndex]); // eslint-disable-line
+    setActiveIndex(0);
+    feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [activeSkill]);
 
   // ── IntersectionObserver ───────────────────────────────────────────────────
 
@@ -488,8 +417,8 @@ export default function Home({
               </button>
             ))}
           </div>
-          {(addMoreSkills || removeSkill) && (
-            <button className="editSkillsBtn" onClick={() => setShowSkillsSheet(true)}>⚙ Skills</button>
+          {addMoreSkills && (
+            <button className="editSkillsBtn" onClick={addMoreSkills}>+ Skills</button>
           )}
         </div>
       </div>
@@ -533,10 +462,12 @@ export default function Home({
                       allow="autoplay; encrypted-media"
                       allowFullScreen
                     />
-                    <div
-                      style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer", touchAction: "pan-y" }}
-                      onClick={() => togglePlayPause(item.videoId)}
-                    />
+                    {!isMobile && (
+                      <div
+                        style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
+                        onClick={() => togglePlayPause(item.videoId)}
+                      />
+                    )}
                   </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
@@ -638,34 +569,6 @@ export default function Home({
           onSend={uid => onShareToFriend(uid, shareTarget)}
           onClose={() => setShareTarget(null)}
         />
-      )}
-
-      {showSkillsSheet && (
-        <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)}>
-          <div className="skillsSheet" onClick={e => e.stopPropagation()}>
-            <div className="skillsSheetHandle" />
-            <p className="skillsSheetTitle">My Skills</p>
-            <ul className="skillsSheetList">
-              {skills.map(s => (
-                <li key={s} className="skillsSheetItem">
-                  <span>{skillEmoji(s)} {s}</span>
-                  {skills.length > 1 && removeSkill && (
-                    <button
-                      className="skillsSheetRemove"
-                      onClick={() => removeSkill(s)}
-                    >✕</button>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {addMoreSkills && (
-              <button
-                className="skillsSheetAdd"
-                onClick={() => { setShowSkillsSheet(false); addMoreSkills(); }}
-              >+ Add New Skill</button>
-            )}
-          </div>
-        </div>
       )}
     </>
   );
