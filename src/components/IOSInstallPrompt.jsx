@@ -52,17 +52,11 @@ export default function IOSInstallPrompt() {
   // Compute inside the component so values are always fresh and loggable
   const isIOS       = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone = window.navigator.standalone === true;
-  const storedKey   = "habi_ios_prompt_dismissed";
-  const storedValue = localStorage.getItem(storedKey);
+  console.log("[IOSInstallPrompt] mounted —", { isIOS, isStandalone, userAgent: navigator.userAgent });
 
-  console.log("[IOSInstallPrompt] mounted —", {
-    isIOS,
-    isStandalone,
-    storedValue,
-    userAgent: navigator.userAgent,
-  });
-
-  const [dismissed, setDismissed] = useState(() => storedValue === "1");
+  // Session-only dismissal: closes for this tab visit, resets on next open.
+  // Permanent hide only happens when they've actually added to home screen (standalone).
+  const [dismissed, setDismissed] = useState(false);
 
   if (!isIOS) {
     console.log("[IOSInstallPrompt] hidden: not iOS");
@@ -72,15 +66,11 @@ export default function IOSInstallPrompt() {
     console.log("[IOSInstallPrompt] hidden: already standalone (PWA)");
     return null;
   }
-  if (dismissed) {
-    console.log("[IOSInstallPrompt] hidden: user dismissed (localStorage key:", storedKey, "=", storedValue, ")");
-    return null;
-  }
+  if (dismissed) return null;
 
   console.log("[IOSInstallPrompt] SHOWING prompt");
 
   function dismiss() {
-    localStorage.setItem(storedKey, "1");
     setDismissed(true);
   }
 
