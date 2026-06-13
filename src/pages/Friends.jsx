@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 
 const INVITE_URL  = "https://habi-sepia.vercel.app";
@@ -102,7 +102,21 @@ export default function Friends({
     ? allPosts.filter((p) => p.userId === selectedFriend.uid)
     : [];
 
-  const unreadCount = notifications.length + friendRequestProfiles.length;
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = unreadNotifCount + friendRequestProfiles.length;
+
+  async function markAsRead() {
+    const unread = notifications.filter((n) => !n.read);
+    if (!unread.length) return;
+    const batch = writeBatch(db);
+    unread.forEach((n) => {
+      batch.update(doc(db, "notifications", n.id), {
+        read: true,
+        readAt: serverTimestamp(),
+      });
+    });
+    await batch.commit();
+  }
 
   // ── Notifications panel ───────────────────────────────────────────────────
   const notifPortal = showRequests && createPortal(
@@ -204,7 +218,7 @@ export default function Friends({
       {/* Top bar */}
       <div className="friendsTopBar">
         <h1 className="friendsTitle">Friends</h1>
-        <button className="friendsBellBtn" onClick={() => setShowRequests(true)}>
+        <button className="friendsBellBtn" onClick={() => { setShowRequests(true); markAsRead(); }}>
           🔔
           {unreadCount > 0 && (
             <span className="friendsBellBadge">{unreadCount}</span>
