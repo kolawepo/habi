@@ -887,6 +887,27 @@ textarea {
   height: calc(100% + 60px);
 }
 
+.ytPlayBtn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  color: #fff;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 5px;
+  z-index: 4;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Transparent strip at the bottom of each slide that always intercepts vertical
    swipe gestures, even after the iframe has claimed touch handling. */
 .slideSwipeZone {
@@ -1161,32 +1182,6 @@ textarea {
   text-decoration: none;
   white-space: nowrap;
 }
-
-.tapForSoundButton {
-  position: absolute;
-  left: 50%;
-  bottom: 205px;
-  transform: translateX(-50%);
-  z-index: 4;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  padding: 11px 18px;
-  background: rgba(0, 0, 0, 0.58);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  color: white;
-  font-size: 14px;
-  font-weight: 850;
-  white-space: nowrap;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
-  -webkit-tap-highlight-color: transparent;
-  animation: unmuteAppear 0.3s ease;
-}
-
-.tapForSoundButton:active {
-  transform: translateX(-50%) scale(0.96);
-}
-
 
 .unmuteButton {
   position: absolute;
@@ -4721,6 +4716,158 @@ textarea::placeholder {
   line-height: 1;
 }
 
+.friendCommentsOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.friendCommentsSheet {
+  width: 100%;
+  max-height: 82dvh;
+  background: var(--bg, #f6f1ee);
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.24);
+}
+
+.friendCommentsHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border, #e8e0db);
+}
+
+.friendCommentsClose {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface, #ede8e4);
+  color: var(--text, #1f1f1f);
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.friendCommentsHeader h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--text, #1f1f1f);
+}
+
+.friendCommentsHeader p,
+.friendCommentsEmpty {
+  margin: 0;
+  color: var(--text-muted, #999);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.friendCommentsList {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 10px;
+}
+
+.friendComment,
+.friendReply {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border, #eee);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.friendReply {
+  margin: 10px 0 0 24px;
+  background: var(--surface-2, #fff0f4);
+}
+
+.friendCommentTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.friendCommentTop strong {
+  color: var(--text, #1f1f1f);
+  font-size: 14px;
+}
+
+.friendCommentTop button,
+.friendReplyButton {
+  border: none;
+  background: transparent;
+  color: #e95443;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 0;
+}
+
+.friendComment p,
+.friendReply p {
+  margin: 0;
+  color: var(--text, #1f1f1f);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.friendReplyButton {
+  color: #ff5f87;
+  margin-top: 8px;
+}
+
+.friendCommentInput,
+.friendReplyInput {
+  display: flex;
+  gap: 10px;
+}
+
+.friendCommentInput {
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border, #e8e0db);
+}
+
+.friendReplyInput {
+  margin-top: 10px;
+}
+
+.friendCommentInput input,
+.friendReplyInput input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--input-bg, #f3f3f3);
+  color: var(--text, #1f1f1f);
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.friendCommentInput button,
+.friendReplyInput button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
+  font-weight: 800;
+}
+
+.friendCommentInput button:disabled,
+.friendReplyInput button:disabled {
+  opacity: 0.45;
+}
+
 .igPostFooter {
   padding: 4px 14px 8px;
 }
@@ -5010,6 +5157,13 @@ textarea::placeholder {
   object-fit: cover;
   aspect-ratio: 16 / 9;
   display: block;
+}
+
+.dmSharedPost video {
+  width: 100%;
+  border-radius: 14px;
+  display: block;
+  background: #000;
 }
 
 .dmSharedVideoInfo {

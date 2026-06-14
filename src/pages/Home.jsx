@@ -30,6 +30,8 @@ function saveCache(skill, videos) {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 export default function Home({
   firstName, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
@@ -42,7 +44,8 @@ export default function Home({
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  const [muted, setMuted] = useState(false);
+  const [muted,          setMuted]          = useState(false);
+  const [playingVideoId, setPlayingVideoId] = useState(null);
 
   const feedEl           = useRef(null);
   const slideRefs        = useRef([]);
@@ -61,6 +64,14 @@ export default function Home({
     const startMuted = !soundUnlocked.current || mutedRef.current;
     return (
       `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=${startMuted ? 1 : 0}&controls=1&modestbranding=1` +
+      `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
+    );
+  }
+
+  // Mobile: user explicitly tapped play, so always start unmuted
+  function ytSrcPlay(videoId) {
+    return (
+      `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1` +
       `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
     );
   }
@@ -192,6 +203,7 @@ export default function Home({
   // ── First gesture → play active video (handles browsers that block unmuted autoplay) ──
 
   useEffect(() => {
+    if (isMobile) return; // mobile uses tap-to-play; autoplay unlock not needed
     let fired = false;
     function onGesture() {
       if (fired) return;
@@ -223,6 +235,11 @@ export default function Home({
     if (f && readySet.current.has(item.videoId)) {
       ytCmd(f, "playVideo");
     }
+  }, [activeIndex]); // eslint-disable-line
+
+  // Mobile: reset play state when swiping to a new slide
+  useEffect(() => {
+    if (isMobile) setPlayingVideoId(null);
   }, [activeIndex]); // eslint-disable-line
 
   // ── Auto-skip unembeddable ─────────────────────────────────────────────────
@@ -361,30 +378,38 @@ export default function Home({
                 isFailed ? (
                   <img src={item.thumbnail} className="tiktokSlideMedia ytBlockedThumb" alt={item.title} />
                 ) : isActive ? (
-                  <>
-                    <iframe
-                      key={item.videoId}
-                      ref={el => {
-                        if (el) iframeRefs.current[item.videoId] = el;
-                        else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
-                      }}
-                      className="tiktokSlideMedia tiktokYtFrame"
-                      src={ytSrc(item.videoId)}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                    />
-                    {/* Transparent overlay — blocks YouTube bottom bar from capturing
-                        swipe gestures; blurs iframe on touch to keep scroll-snap working */}
-                    <div
-                      style={{ position: "absolute", inset: 0, zIndex: 1 }}
-                      onTouchStart={() => {
-                        document.activeElement?.blur();
-                        feedEl.current?.focus();
-                      }}
-                    />
-                    {/* Bottom zone always routes vertical swipes to the scroll container */}
-                    <div className="slideSwipeZone" />
-                  </>
+                  isMobile && playingVideoId !== item.videoId ? (
+                    <>
+                      <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
+                      <button
+                        className="ytPlayBtn"
+                        onClick={e => { e.stopPropagation(); setPlayingVideoId(item.videoId); }}
+                        aria-label="Play"
+                      >▶</button>
+                    </>
+                  ) : (
+                    <>
+                      <iframe
+                        key={item.videoId}
+                        ref={el => {
+                          if (el) iframeRefs.current[item.videoId] = el;
+                          else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
+                        }}
+                        className="tiktokSlideMedia tiktokYtFrame"
+                        src={isMobile ? ytSrcPlay(item.videoId) : ytSrc(item.videoId)}
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                      />
+                      <div
+                        style={{ position: "absolute", inset: 0, zIndex: 1 }}
+                        onTouchStart={() => {
+                          document.activeElement?.blur();
+                          feedEl.current?.focus();
+                        }}
+                      />
+                      <div className="slideSwipeZone" />
+                    </>
+                  )
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
