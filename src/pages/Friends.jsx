@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   addDoc,
@@ -13,6 +13,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import ShareModal from "../components/ShareModal";
 
 function timeAgo(ts) {
   if (!ts) return "";
@@ -61,11 +62,7 @@ async function shareInvite(setToast) {
     }
   } catch (err) {
     if (err.name === "AbortError") return;
-    try {
-      await copyText(INVITE_TEXT);
-      setToast(true);
-      setTimeout(() => setToast(false), 2500);
-    } catch {}
+    try { await copyText(INVITE_TEXT); setToast(true); setTimeout(() => setToast(false), 2500); } catch {}
   }
 }
 
@@ -87,6 +84,7 @@ export default function Friends({
   username,
   handleLikePost,
   likedPosts,
+  onShareToFriend,
 }) {
   const [friendRequestProfiles, setFriendRequestProfiles] = useState([]);
   const [friendProfiles,        setFriendProfiles]        = useState([]);
@@ -98,6 +96,15 @@ export default function Friends({
   const [expandedPostId, setExpandedPostId] = useState(null);
   const [postComments,   setPostComments]   = useState([]);
   const [newComment,     setNewComment]     = useState("");
+  const [replyingToId,   setReplyingToId]   = useState(null);
+  const [replyText,      setReplyText]      = useState("");
+  const [deletingId,     setDeletingId]     = useState(null);
+
+  // share
+  const [shareMenuPost, setShareMenuPost] = useState(null); // post with share options open
+  const [sharePickPost, setSharePickPost] = useState(null); // post for in-app friend picker
+
+  const longPressRef = useRef(null);
 
   // ── Load friend request profiles ──────────────────────────────────────────
   useEffect(() => {
@@ -130,7 +137,7 @@ export default function Friends({
     load();
   }, [friends]);
 
-  // ── Comments subscription for expanded post ───────────────────────────────
+  // ── Comments subscription (all comments including replies) ────────────────
   useEffect(() => {
     if (!expandedPostId) { setPostComments([]); return; }
     const q = query(collection(db, "comments"), where("postId", "==", expandedPostId));
@@ -138,7 +145,6 @@ export default function Friends({
       setPostComments(
         snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(c => !c.parentCommentId)
           .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
       );
     });
@@ -177,20 +183,63 @@ export default function Friends({
     setNewComment("");
   }
 
-  async function removeComment(commentId) {
-    await deleteDoc(doc(db, "comments", commentId));
+  async function submitReply(parentCommentId, postId) {
+    if (!replyText.trim() || !currentUser) return;
+    const post = progressPosts.find(p => p.id === postId);
+    await addDoc(collection(db, "comments"), {
+      postId,
+      parentCommentId,
+      postOwnerId: post?.userId,
+      userId: currentUser.uid,
+      username,
+      text: replyText.trim(),
+      createdAt: serverTimestamp(),
+    });
+    setReplyText("");
+    setReplyingToId(null);
   }
 
-  function sharePost(post) {
+  async function removeComment(commentId) {
+    // also delete any replies to this comment
+    const replies = postComments.filter(c => c.parentCommentId === commentId);
+    const batch = writeBatch(db);
+    replies.forEach(r => batch.delete(doc(db, "comments", r.id)));
+    batch.delete(doc(db, "comments", commentId));
+    await batch.commit();
+    setDeletingId(null);
+  }
+
+  function startLongPress(commentId, isOwn) {
+    if (!isOwn) return;
+    longPressRef.current = setTimeout(() => setDeletingId(commentId), 480);
+  }
+  function cancelLongPress() {
+    if (longPressRef.current) clearTimeout(longPressRef.current);
+  }
+
+  function doExternalShare(post) {
     const url = INVITE_URL;
     const text = `@${post.username}${post.caption ? `: ${post.caption}` : ""} — on Habi`;
     if (navigator.share) {
-      navigator.share({ title: "Habi", text, url }).catch((e) => {
+      navigator.share({ title: "Habi", text, url }).catch(e => {
         if (e.name !== "AbortError") { copyText(`${text}\n${url}`); setToast(true); setTimeout(() => setToast(false), 2500); }
       });
     } else {
       copyText(`${text}\n${url}`).then(() => { setToast(true); setTimeout(() => setToast(false), 2500); }).catch(() => {});
     }
+  }
+
+  function sendToFriend(friendUid) {
+    if (!sharePickPost) return;
+    onShareToFriend?.(friendUid, {
+      postId: sharePickPost.id,
+      postCaption: sharePickPost.caption,
+      postMediaUrl: sharePickPost.mediaUrl,
+      postMediaType: sharePickPost.mediaType,
+      postUsername: sharePickPost.username,
+      postSkill: sharePickPost.skill,
+    });
+    setSharePickPost(null);
   }
 
   // ── Notifications panel ───────────────────────────────────────────────────
@@ -199,7 +248,6 @@ export default function Friends({
       <div className="fnPanel" onClick={(e) => e.stopPropagation()}>
         <button className="fnClose" onClick={() => setShowRequests(false)}>✕</button>
         <h2 className="fnTitle">Notifications</h2>
-
         <h3 className="fnSectionLabel">Friend Requests</h3>
         {friendRequestProfiles.length === 0 ? (
           <p className="fnEmpty">No friend requests right now.</p>
@@ -219,17 +267,12 @@ export default function Friends({
                 <p className="fnReqSubtext">sent you a friend request</p>
               </div>
               <div className="fnReqBtns">
-                <button className="fnAccept" onClick={() => { handleAcceptFriendRequest(req.uid); setShowRequests(false); }}>
-                  Accept
-                </button>
-                <button className="fnDecline" onClick={() => handleDeclineFriendRequest(req.uid)}>
-                  Decline
-                </button>
+                <button className="fnAccept" onClick={() => { handleAcceptFriendRequest(req.uid); setShowRequests(false); }}>Accept</button>
+                <button className="fnDecline" onClick={() => handleDeclineFriendRequest(req.uid)}>Decline</button>
               </div>
             </div>
           ))
         )}
-
         <h3 className="fnSectionLabel">Activity</h3>
         {notifications.length === 0 ? (
           <p className="fnEmpty">No activity yet.</p>
@@ -259,25 +302,20 @@ export default function Friends({
     <div className="friendProfileModal" onClick={() => setSelectedFriend(null)}>
       <div className="friendProfileSheet" onClick={(e) => e.stopPropagation()}>
         <button className="closeFriendProfile" onClick={() => setSelectedFriend(null)}>✕</button>
-
         <div className="largeFriendAvatar">
           {selectedFriend.profilePhotoUrl
             ? <img src={selectedFriend.profilePhotoUrl} alt="profile" />
             : (selectedFriend.username || "?").charAt(0).toUpperCase()}
         </div>
-
         <h2>{selectedFriend.name || selectedFriend.firstName}</h2>
         <p>@{selectedFriend.username}</p>
-
         <div className="friendProfileStats">
           <div><b>{selectedPosts.filter(p => p.postType !== "tutorial").length}</b><span>Posts</span></div>
           <div><b>{selectedFriend.streak || 0}</b><span>Streak</span></div>
         </div>
-
         <p className="friendProfileSkills">
           Learning: {selectedFriend.selectedSkills?.join(", ") || "No skills yet"}
         </p>
-
         <div className="friendUploadGrid">
           {selectedPosts.length === 0 ? (
             <div className="emptyVideoState">No uploads yet.</div>
@@ -303,9 +341,7 @@ export default function Friends({
         <h1 className="friendsTitle">Friends</h1>
         <button className="friendsBellBtn" onClick={() => { setShowRequests(true); markAsRead(); }}>
           🔔
-          {unreadCount > 0 && (
-            <span className="friendsBellBadge">{unreadCount}</span>
-          )}
+          {unreadCount > 0 && <span className="friendsBellBadge">{unreadCount}</span>}
         </button>
       </div>
 
@@ -340,25 +376,27 @@ export default function Friends({
 
         {/* Feed */}
         {progressPosts.length === 0 ? (
-          friends.length > 0 && (
-            <p className="igEmptyFeed">Your friends haven't posted yet 👀</p>
-          )
+          friends.length > 0 && <p className="igEmptyFeed">Your friends haven't posted yet 👀</p>
         ) : (
           <div className="igFeed">
             {progressPosts.map((post) => {
-              const isLiked  = post.likes?.includes(currentUser?.uid) || likedPosts?.includes(post.id);
+              const isLiked   = post.likes?.includes(currentUser?.uid) || likedPosts?.includes(post.id);
               const likeCount = post.likes?.length ?? 0;
-              const poster   = friendProfiles.find((f) => f.uid === post.userId);
-              const expanded = expandedPostId === post.id;
+              const poster    = friendProfiles.find((f) => f.uid === post.userId);
+              const expanded  = expandedPostId === post.id;
+
+              // split flat comment list into roots + replies (only when this post is expanded)
+              const rootComments = expanded
+                ? postComments.filter(c => !c.parentCommentId)
+                : [];
+              const repliesFor = (parentId) =>
+                postComments.filter(c => c.parentCommentId === parentId);
 
               return (
                 <div key={post.id} className="igPost">
                   {/* Header */}
                   <div className="igPostHeader">
-                    <button
-                      className="igPostAvatarBtn"
-                      onClick={() => poster && setSelectedFriend(poster)}
-                    >
+                    <button className="igPostAvatarBtn" onClick={() => poster && setSelectedFriend(poster)}>
                       <div className="igPostAvatar">
                         {post.profilePhotoUrl
                           ? <img src={post.profilePhotoUrl} alt="" />
@@ -394,6 +432,8 @@ export default function Friends({
                       onClick={() => {
                         setExpandedPostId(expanded ? null : post.id);
                         setNewComment("");
+                        setReplyingToId(null);
+                        setDeletingId(null);
                       }}
                       aria-label="Comments"
                     >
@@ -401,7 +441,7 @@ export default function Friends({
                     </button>
                     <button
                       className="igMsgBtn"
-                      onClick={() => sharePost(post)}
+                      onClick={() => setShareMenuPost(post)}
                       aria-label="Share"
                     >
                       ↗
@@ -412,14 +452,11 @@ export default function Friends({
                   {((!poster?.hideLikeCount && likeCount > 0) || post.caption) && (
                     <div className="igPostFooter">
                       {!poster?.hideLikeCount && likeCount > 0 && (
-                        <p className="igLikeCount">
-                          {likeCount} {likeCount === 1 ? "like" : "likes"}
-                        </p>
+                        <p className="igLikeCount">{likeCount} {likeCount === 1 ? "like" : "likes"}</p>
                       )}
                       {post.caption && (
                         <p className="igCaption">
-                          <span className="igCaptionUser">@{post.username}</span>{" "}
-                          {post.caption}
+                          <span className="igCaptionUser">@{post.username}</span>{" "}{post.caption}
                         </p>
                       )}
                     </div>
@@ -427,20 +464,110 @@ export default function Friends({
 
                   {/* Inline comments */}
                   {expanded && (
-                    <div className="igComments">
-                      {postComments.length === 0 ? (
+                    <div className="igComments" onClick={() => setDeletingId(null)}>
+                      {rootComments.length === 0 ? (
                         <p className="igCommentsEmpty">No comments yet</p>
                       ) : (
-                        postComments.map(c => (
-                          <div key={c.id} className="igComment">
-                            <span className="igCommentUser">@{c.username}</span>
-                            <span className="igCommentText">{c.text}</span>
-                            {c.userId === currentUser?.uid && (
-                              <button className="igCommentDel" onClick={() => removeComment(c.id)}>✕</button>
-                            )}
-                          </div>
-                        ))
+                        rootComments.map(c => {
+                          const isOwn      = c.userId === currentUser?.uid;
+                          const isDeleting = deletingId === c.id;
+                          const replies    = repliesFor(c.id);
+
+                          return (
+                            <div key={c.id} className="igCommentThread">
+                              {/* Root comment */}
+                              <div
+                                className={`igComment${isDeleting ? " igCommentDeleting" : ""}`}
+                                onTouchStart={() => startLongPress(c.id, isOwn)}
+                                onTouchEnd={cancelLongPress}
+                                onTouchMove={cancelLongPress}
+                                onContextMenu={e => { if (isOwn) { e.preventDefault(); setDeletingId(c.id); } }}
+                                onClick={e => e.stopPropagation()}
+                              >
+                                <div className="igCommentMain">
+                                  <span className="igCommentUser">@{c.username}</span>
+                                  <span className="igCommentText">{c.text}</span>
+                                </div>
+                                <div className="igCommentMeta">
+                                  {isDeleting && isOwn ? (
+                                    <button
+                                      className="igCommentDel"
+                                      onClick={e => { e.stopPropagation(); removeComment(c.id); }}
+                                    >
+                                      Delete
+                                    </button>
+                                  ) : (
+                                    <button
+                                      className="igCommentReplyBtn"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setReplyingToId(replyingToId === c.id ? null : c.id);
+                                        setReplyText("");
+                                        setDeletingId(null);
+                                      }}
+                                    >
+                                      Reply
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Threaded replies */}
+                              {replies.map(r => {
+                                const rOwn      = r.userId === currentUser?.uid;
+                                const rDeleting = deletingId === r.id;
+                                return (
+                                  <div
+                                    key={r.id}
+                                    className={`igReply${rDeleting ? " igCommentDeleting" : ""}`}
+                                    onTouchStart={() => startLongPress(r.id, rOwn)}
+                                    onTouchEnd={cancelLongPress}
+                                    onTouchMove={cancelLongPress}
+                                    onContextMenu={e => { if (rOwn) { e.preventDefault(); setDeletingId(r.id); } }}
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    <div className="igCommentMain">
+                                      <span className="igCommentUser">@{r.username}</span>
+                                      <span className="igCommentText">{r.text}</span>
+                                    </div>
+                                    {rDeleting && rOwn && (
+                                      <div className="igCommentMeta">
+                                        <button
+                                          className="igCommentDel"
+                                          onClick={e => { e.stopPropagation(); removeComment(r.id); }}
+                                        >
+                                          Delete
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+
+                              {/* Reply input */}
+                              {replyingToId === c.id && (
+                                <div className="igReplyBar">
+                                  <input
+                                    className="igCommentInput"
+                                    value={replyText}
+                                    autoFocus
+                                    onChange={e => setReplyText(e.target.value)}
+                                    placeholder={`Reply to @${c.username}…`}
+                                    onKeyDown={e => { if (e.key === "Enter") submitReply(c.id, post.id); }}
+                                  />
+                                  <button
+                                    className="igCommentSend"
+                                    onClick={() => submitReply(c.id, post.id)}
+                                    disabled={!replyText.trim()}
+                                  >↑</button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
                       )}
+
+                      {/* New top-level comment */}
                       <div className="igCommentBar">
                         <input
                           className="igCommentInput"
@@ -472,6 +599,48 @@ export default function Friends({
 
       {notifPortal}
       {profilePortal}
+
+      {/* Share options menu */}
+      {shareMenuPost && createPortal(
+        <div className="igShareOverlay" onClick={() => setShareMenuPost(null)}>
+          <div className="igShareSheet" onClick={e => e.stopPropagation()}>
+            <p className="igShareTitle">Share post</p>
+            <button
+              className="igShareOption"
+              onClick={() => {
+                setSharePickPost(shareMenuPost);
+                setShareMenuPost(null);
+              }}
+            >
+              <span className="igShareOptionIcon">👥</span>
+              <span>Share to Friends</span>
+              <span className="igShareOptionHint">Send as a message</span>
+            </button>
+            <button
+              className="igShareOption"
+              onClick={() => {
+                doExternalShare(shareMenuPost);
+                setShareMenuPost(null);
+              }}
+            >
+              <span className="igShareOptionIcon">↗</span>
+              <span>Share externally</span>
+              <span className="igShareOptionHint">Share outside of Habi</span>
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* In-app friend picker */}
+      {sharePickPost && (
+        <ShareModal
+          friends={friends.filter(uid => uid !== sharePickPost.userId)}
+          videoTitle={`@${sharePickPost.username}: ${sharePickPost.caption || "Shared post"}`}
+          onSend={sendToFriend}
+          onClose={() => setSharePickPost(null)}
+        />
+      )}
 
       {toast && createPortal(
         <div className="fpToast">Link copied!</div>,

@@ -4705,42 +4705,151 @@ textarea::placeholder {
   border-top: 1px solid var(--border, #e8e0db);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .igCommentsEmpty {
   font-size: 13px;
   color: var(--subtext, #888);
   margin: 0;
 }
-.igComment {
+.igCommentThread {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 2px;
+}
+.igComment,
+.igReply {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 6px;
   font-size: 13.5px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.igReply {
+  margin-left: 18px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border, #e8e0db);
+}
+.igCommentDeleting {
+  background: rgba(255, 60, 60, 0.08);
+}
+.igCommentMain {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.igCommentMeta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 .igCommentUser {
   font-weight: 800;
   color: var(--text, #1f1f1f);
   flex-shrink: 0;
+  font-size: 13px;
 }
 .igCommentText {
   color: var(--text, #1f1f1f);
   flex: 1;
   line-height: 1.4;
+  min-width: 0;
+  word-break: break-word;
+}
+.igCommentReplyBtn {
+  background: none;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--subtext, #999);
+  cursor: pointer;
+  padding: 2px 4px;
 }
 .igCommentDel {
   background: none;
   border: none;
-  font-size: 11px;
-  color: var(--subtext, #aaa);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #e03535;
   cursor: pointer;
-  padding: 0 2px;
-  flex-shrink: 0;
+  padding: 2px 4px;
+}
+.igReplyBar {
+  display: flex;
+  gap: 8px;
+  margin-left: 18px;
+  margin-top: 2px;
+  margin-bottom: 4px;
 }
 .igCommentBar {
   display: flex;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 6px;
+}
+
+/* Share options bottom sheet */
+.igShareOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 3000;
+  display: flex;
+  align-items: flex-end;
+}
+.igShareSheet {
+  width: 100%;
+  background: var(--bg, #f6f1ee);
+  border-radius: 22px 22px 0 0;
+  padding: 20px 16px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.18);
+}
+.igShareTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--subtext, #999);
+  text-align: center;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.igShareOption {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface, #ede8e4);
+  border: none;
+  border-radius: 14px;
+  padding: 14px 18px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.igShareOptionIcon {
+  font-size: 22px;
+  width: 28px;
+  flex-shrink: 0;
+}
+.igShareOption span:nth-child(2) {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #1f1f1f);
+  flex: 1;
+}
+.igShareOptionHint {
+  font-size: 12px;
+  color: var(--subtext, #999);
+  font-weight: 400 !important;
+  flex: unset !important;
 }
 .igCommentInput {
   flex: 1;
