@@ -4,13 +4,6 @@ import ShareModal from "../components/ShareModal";
 
 // ── YouTube helpers ────────────────────────────────────────────────────────────
 
-function ytSrc(videoId) {
-  return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
-    `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
-  );
-}
-
 function ytCmd(iframe, fn, args = []) {
   iframe?.contentWindow?.postMessage(
     JSON.stringify({ event: "command", func: fn, args }),
@@ -58,10 +51,19 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const pauseIndRefs     = useRef({});  // videoId → DOM element for pause indicator
+  const pauseIndRefs     = useRef({});
+  const soundUnlocked    = useRef(false);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
+
+  function ytSrc(videoId) {
+    const startMuted = !soundUnlocked.current || mutedRef.current;
+    return (
+      `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=${startMuted ? 1 : 0}&controls=1&modestbranding=1` +
+      `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
+    );
+  }
 
   const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 
@@ -194,6 +196,7 @@ export default function Home({
     function onGesture() {
       if (fired) return;
       fired = true;
+      soundUnlocked.current = true;
       const item = feedRef.current[activeIdxRef.current];
       if (item?._type === "youtube") {
         const f = iframeRefs.current[item.videoId];
@@ -218,8 +221,6 @@ export default function Home({
     if (!item || item._type !== "youtube") return;
     const f = iframeRefs.current[item.videoId];
     if (f && readySet.current.has(item.videoId)) {
-      if (mutedRef.current) ytCmd(f, "mute");
-      else { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
       ytCmd(f, "playVideo");
     }
   }, [activeIndex]); // eslint-disable-line
@@ -250,8 +251,8 @@ export default function Home({
         readySet.current.add(vid);
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
-          if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
-          else { ytCmd(iframeRefs.current[vid], "unMute"); ytCmd(iframeRefs.current[vid], "setVolume", [100]); }
+          // src already encodes the correct mute state; just ensure full volume when unlocked
+          if (soundUnlocked.current && !mutedRef.current) ytCmd(iframeRefs.current[vid], "setVolume", [100]);
           ytCmd(iframeRefs.current[vid], "playVideo");
         } else {
           ytCmd(iframeRefs.current[vid], "pauseVideo");
