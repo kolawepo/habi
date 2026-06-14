@@ -4,21 +4,12 @@ import ShareModal from "../components/ShareModal";
 
 // ── YouTube helpers ────────────────────────────────────────────────────────────
 
-function ytSrcSound(videoId) {
+function ytSrc(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
   );
 }
-
-function ytSrcManual(videoId) {
-  return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1` +
-    `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
-  );
-}
-
-const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
 function ytCmd(iframe, fn, args = []) {
   iframe?.contentWindow?.postMessage(
@@ -27,58 +18,20 @@ function ytCmd(iframe, fn, args = []) {
   );
 }
 
-// ── Position / skill persistence ──────────────────────────────────────────────
-
-const LS_SKILL_KEY = "habi_lastSkill";
-const LS_SOUND_KEY = "habi_soundOn";
-const lsIdxKey = s => `habi_idx_${s}`;
-
-function readSoundPreference() {
-  try { return localStorage.getItem(LS_SOUND_KEY) === "true"; }
-  catch { return false; }
-}
-
-function writeSoundPreference(soundOn) {
-  try { localStorage.setItem(LS_SOUND_KEY, String(soundOn)); }
-  catch { return false; }
-  return true;
-}
-
-function readSavedIdx(skill) {
-  const v = parseInt(localStorage.getItem(lsIdxKey(skill)), 10);
-  return isNaN(v) ? null : v;
-}
-function writeSavedIdx(skill, idx) {
-  try { localStorage.setItem(lsIdxKey(skill), String(idx)); } catch {}
-}
-function pickStartIdx(skill, feedLen) {
-  if (!feedLen) return 0;
-  const saved = readSavedIdx(skill);
-  if (saved !== null && saved < feedLen) return saved;
-  return feedLen > 1 ? Math.floor(Math.random() * feedLen) : 0;
-}
-
 // ── Cache ──────────────────────────────────────────────────────────────────────
 
 const TTL = 24 * 60 * 60 * 1000;
 
-const CACHE_KEY = s => `yt_v2_${s}`;
-
 function loadCache(skill) {
   try {
-    const { videos, ts } = JSON.parse(localStorage.getItem(CACHE_KEY(skill)) || "{}");
-    if (!videos?.length || Date.now() - ts > TTL) { localStorage.removeItem(CACHE_KEY(skill)); return null; }
+    const { videos, ts } = JSON.parse(localStorage.getItem(`yt_${skill}`) || "{}");
+    if (!videos?.length || Date.now() - ts > TTL) { localStorage.removeItem(`yt_${skill}`); return null; }
     return videos;
   } catch { return null; }
 }
 
 function saveCache(skill, videos) {
-  try { localStorage.setItem(CACHE_KEY(skill), JSON.stringify({ videos, ts: Date.now() })); } catch {}
-}
-
-function isShort(item) {
-  const text = `${item.snippet?.title || ""} ${item.snippet?.description || ""}`;
-  return /#shorts/i.test(text);
+  try { localStorage.setItem(`yt_${skill}`, JSON.stringify({ videos, ts: Date.now() })); } catch {}
 }
 
 
@@ -87,25 +40,16 @@ function isShort(item) {
 export default function Home({
   firstName, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
-  friends, onShareToFriend, addMoreSkills, removeSkill,
+  friends, onShareToFriend, addMoreSkills,
 }) {
-  const [activeSkill, setActiveSkill] = useState(() => {
-    try { return localStorage.getItem(LS_SKILL_KEY) || (skills[0] || ""); }
-    catch { return skills[0] || ""; }
-  });
+  const [activeSkill, setActiveSkill] = useState(skills[0] || "");
   const [ytBySkill,   setYtBySkill]   = useState({});
   const [loading,     setLoading]     = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [failed,      setFailed]      = useState(new Set());
   const [shareTarget, setShareTarget] = useState(null);
 
-  const [showSkillsSheet, setShowSkillsSheet] = useState(false);
-  const [soundOn,         setSoundOn]         = useState(() => !isMobile && readSoundPreference());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [vidDuration,   setVidDuration]   = useState(0);
-  const [vidCurrentTime,setVidCurrentTime]= useState(0);
+  const [muted, setMuted] = useState(false);
 
   const feedEl           = useRef(null);
   const slideRefs        = useRef([]);
@@ -114,19 +58,12 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const isDraggingRef          = useRef(false);
-  const isPausedRef            = useRef(false);
-  const pendingSkillRestoreRef = useRef(false);
+  const pauseIndRefs     = useRef({});  // videoId → DOM element for pause indicator
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
-  const soundOnRef   = useRef(soundOn);
+  const mutedRef     = useRef(muted); mutedRef.current   = muted;
 
   const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-
-  useEffect(() => {
-    soundOnRef.current = soundOn;
-  }, [soundOn]);
-
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -159,7 +96,7 @@ export default function Home({
       pageToken = data.nextPageToken || null;
 
       const batch = (data.items || [])
-        .filter(i => i.id?.videoId && !seen.has(i.id.videoId) && !isShort(i))
+        .filter(i => i.id?.videoId && !seen.has(i.id.videoId))
         .map(i => { seen.add(i.id.videoId); return {
           videoId: i.id.videoId, title: i.snippet.title,
           creator: i.snippet.channelTitle, skill,
@@ -187,44 +124,6 @@ export default function Home({
 
     if (cx.current) return null;
     if (confirmed.length) { memCache.current[skill] = confirmed; saveCache(skill, confirmed); }
-    return confirmed;
-  }
-
-  async function fetchSearchQuery(queryString, cx) {
-    if (!YT_KEY) return [];
-    const q = encodeURIComponent(queryString);
-    const confirmed = []; const seen = new Set();
-    let pageToken = null; let fetched = 0;
-
-    while (confirmed.length < 8 && fetched < 50) {
-      if (cx.current) return null;
-      const size = Math.min(25, 50 - fetched);
-      let url =
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
-        `&videoEmbeddable=true&videoSyndicated=true&relevanceLanguage=en&safeSearch=strict` +
-        `&maxResults=${size}&q=${q}&key=${YT_KEY}`;
-      if (pageToken) url += `&pageToken=${pageToken}`;
-
-      let data;
-      try { data = await fetch(url).then(r => r.json()); } catch { break; }
-      if (data.error || cx.current) break;
-      pageToken = data.nextPageToken || null;
-
-      const batch = (data.items || [])
-        .filter(i => i.id?.videoId && !seen.has(i.id.videoId) && !isShort(i))
-        .map(i => { seen.add(i.id.videoId); return {
-          videoId: i.id.videoId, title: i.snippet.title,
-          creator: i.snippet.channelTitle, skill: activeSkill,
-          thumbnail: i.snippet.thumbnails?.high?.url || i.snippet.thumbnails?.medium?.url,
-          _type: "youtube",
-        }; });
-      fetched += batch.length;
-      if (!batch.length) break;
-      if (cx.current) return null;
-      confirmed.push(...batch);
-      if (!pageToken) break;
-    }
-    if (cx.current) return null;
     return confirmed;
   }
 
@@ -257,89 +156,23 @@ export default function Home({
     if (skills.length && !skills.includes(activeSkill)) setActiveSkill(skills[0]);
   }, [skills]); // eslint-disable-line
 
-  // Search: fetch YouTube results for the typed query (debounced 500 ms)
-  useEffect(() => {
-    const trimmed = searchQuery.trim();
-    if (!trimmed) { setSearchResults([]); setSearchLoading(false); return; }
-
-    const cx = { current: false };
-    setSearchLoading(true);
-    setSearchResults([]);
-
-    const timer = setTimeout(() => {
-      fetchSearchQuery(`${activeSkill} ${trimmed}`, cx)
-        .then(v => { if (!cx.current) setSearchResults(v || []); })
-        .catch(() => {})
-        .finally(() => { if (!cx.current) setSearchLoading(false); });
-    }, 500);
-
-    return () => { cx.current = true; clearTimeout(timer); };
-  }, [searchQuery, activeSkill]); // eslint-disable-line
-
   // ── Feed ──────────────────────────────────────────────────────────────────
 
-  const activeSkillVideos = ytBySkill[activeSkill]; // stable ref — only changes when this skill's data arrives
-
-  const rawFeed = [
+  const feed = [
     ...allPosts
       .filter(p => p.postType === "tutorial" && p.skill === activeSkill)
       .slice(0, 20)
       .map(p => ({ ...p, _type: "post" })),
-    ...(activeSkillVideos || []).map(v => ({ ...v, _type: "youtube" })),
+    ...(ytBySkill[activeSkill] || []).map(v => ({ ...v, _type: "youtube" })),
   ];
-  const trimmedSearch = searchQuery.trim();
-  const feed = trimmedSearch ? searchResults : rawFeed;
   feedRef.current = feed;
 
-  // ── Persist active skill ──────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (activeSkill) try { localStorage.setItem(LS_SKILL_KEY, activeSkill); } catch {}
-  }, [activeSkill]);
-
-  // ── Save video index per skill (not during search) ────────────────────────
-
-  useEffect(() => {
-    if (!activeSkill || searchQuery.trim() || !feedRef.current.length) return;
-    writeSavedIdx(activeSkill, activeIndex);
-  }, [activeIndex]); // eslint-disable-line
-
-  // ── Skill change: restore saved position or pick random ──────────────────
-
-  useEffect(() => {
-    const feedLen = feedRef.current.length;
-    if (feedLen > 0) {
-      const idx = pickStartIdx(activeSkill, feedLen);
-      setActiveIndex(idx);
-      feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
-      pendingSkillRestoreRef.current = false;
-    } else {
-      setActiveIndex(0);
-      feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
-      pendingSkillRestoreRef.current = true;
-    }
-  }, [activeSkill]); // eslint-disable-line
-
-  // ── Feed loaded async: apply deferred restore ─────────────────────────────
-  // Depends only on the active skill's videos — background prefetches for
-  // other skills do NOT fire this, preventing spurious scrollTo calls during swipes.
-
-  useEffect(() => {
-    if (!pendingSkillRestoreRef.current) return;
-    const feedLen = feedRef.current.length;
-    if (!feedLen) return;
-    const idx = pickStartIdx(activeSkill, feedLen);
-    setActiveIndex(idx);
-    feedEl.current?.scrollTo({ top: idx * (feedEl.current?.clientHeight || innerHeight), behavior: "instant" });
-    pendingSkillRestoreRef.current = false;
-  }, [activeSkillVideos]); // eslint-disable-line
-
-  // ── Search change: scroll to top ──────────────────────────────────────────
+  // ── Reset on skill change ──────────────────────────────────────────────────
 
   useEffect(() => {
     setActiveIndex(0);
     feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
-  }, [searchQuery]); // eslint-disable-line
+  }, [activeSkill]);
 
   // ── IntersectionObserver ───────────────────────────────────────────────────
 
@@ -354,43 +187,41 @@ export default function Home({
     return () => obsRef.current?.disconnect();
   }, []);
 
-  // ── Active media playback / sound handoff ─────────────────────────────────
-
-  function applySoundToIframe(iframe, nextSoundOn) {
-    if (!iframe) return;
-    if (nextSoundOn) {
-      ytCmd(iframe, "unMute");
-      ytCmd(iframe, "setVolume", [100]);
-    } else {
-      ytCmd(iframe, "mute");
-    }
-    ytCmd(iframe, "playVideo");
-  }
-
-  function applySoundToNativeVideo(video, nextSoundOn) {
-    if (!video) return;
-    video.muted = !nextSoundOn;
-    if (nextSoundOn) video.volume = 1;
-    video.play?.().catch(() => {});
-  }
-
-  function applySoundToActiveMedia(nextSoundOn = soundOnRef.current) {
-    const item = feedRef.current[activeIdxRef.current];
-    const activeSlide = slideRefs.current[activeIdxRef.current];
-    applySoundToNativeVideo(activeSlide?.querySelector("video"), nextSoundOn);
-
-    if (item?._type === "youtube") {
-      if (isMobile) return;
-      applySoundToIframe(iframeRefs.current[item.videoId], nextSoundOn);
-    }
-  }
+  // ── First gesture → play active video (handles browsers that block unmuted autoplay) ──
 
   useEffect(() => {
-    setVidCurrentTime(0);
-    setVidDuration(0);
-    applySoundToActiveMedia();
-    const retry = setTimeout(() => applySoundToActiveMedia(), 150);
-    return () => clearTimeout(retry);
+    let fired = false;
+    function onGesture() {
+      if (fired) return;
+      fired = true;
+      const item = feedRef.current[activeIdxRef.current];
+      if (item?._type === "youtube") {
+        const f = iframeRefs.current[item.videoId];
+        if (!mutedRef.current) { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+        ytCmd(f, "playVideo");
+      }
+    }
+    document.addEventListener("touchstart", onGesture, { passive: true });
+    document.addEventListener("click", onGesture);
+    return () => {
+      document.removeEventListener("touchstart", onGesture);
+      document.removeEventListener("click", onGesture);
+    };
+  }, []); // eslint-disable-line
+
+  // ── When active index changes, play it if the iframe is already ready ─────
+  // (usually onReady fires after mount and handles it; this covers fast swipes
+  //  where the iframe was pre-mounted from a previous render cycle)
+
+  useEffect(() => {
+    const item = feedRef.current[activeIndex];
+    if (!item || item._type !== "youtube") return;
+    const f = iframeRefs.current[item.videoId];
+    if (f && readySet.current.has(item.videoId)) {
+      if (mutedRef.current) ytCmd(f, "mute");
+      else { ytCmd(f, "unMute"); ytCmd(f, "setVolume", [100]); }
+      ytCmd(f, "playVideo");
+    }
   }, [activeIndex]); // eslint-disable-line
 
   // ── Auto-skip unembeddable ─────────────────────────────────────────────────
@@ -419,68 +250,35 @@ export default function Home({
         readySet.current.add(vid);
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
-          if (!isMobile) applySoundToIframe(iframeRefs.current[vid], soundOnRef.current);
+          if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
+          else { ytCmd(iframeRefs.current[vid], "unMute"); ytCmd(iframeRefs.current[vid], "setVolume", [100]); }
+          ytCmd(iframeRefs.current[vid], "playVideo");
         } else {
           ytCmd(iframeRefs.current[vid], "pauseVideo");
         }
       }
 
       if (d.event === "onStateChange") {
-        if (d.info === 1) isPausedRef.current = false; // playing
-        if (d.info === 2) isPausedRef.current = true;  // paused
-        if (isMobile && d.info === 1) {
-          const active = feedRef.current[activeIdxRef.current];
-          if (active?._type === "youtube" && active.videoId === vid) {
-            soundOnRef.current = true;
-            setSoundOn(true);
-            writeSoundPreference(true);
-          }
-        }
+        const ind = pauseIndRefs.current[vid];
+        if (d.info === 1 && ind) ind.style.display = "none";       // playing
+        else if (d.info === 2 && ind) ind.style.display = "flex";  // paused
       }
-
-      if (d.event === "infoDelivery" && d.info) {
-        if (d.info.duration)              setVidDuration(d.info.duration);
-        if (d.info.currentTime != null && !isDraggingRef.current)
-          setVidCurrentTime(d.info.currentTime);
-      }
-
     }
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
-  // ── Play/pause toggle (desktop click overlay) ─────────────────────────────
+  // ── Mute toggle ────────────────────────────────────────────────────────────
 
-  function togglePlayPause(videoId) {
-    const f = iframeRefs.current[videoId];
-    if (isPausedRef.current) {
-      ytCmd(f, "playVideo");
-      isPausedRef.current = false;
-    } else {
-      ytCmd(f, "pauseVideo");
-      isPausedRef.current = true;
-    }
-    // Return focus to the scroll container so swipe still works after tapping
-    setTimeout(() => feedEl.current?.focus(), 300);
-  }
-
-  // ── Sound toggle ───────────────────────────────────────────────────────────
-
-  function applySoundToActiveVideo(nextSoundOn, e) {
+  function toggleMute(e) {
     e.stopPropagation();
-    soundOnRef.current = nextSoundOn;
-    applySoundToActiveMedia(nextSoundOn);
-    setSoundOn(nextSoundOn);
-    writeSoundPreference(nextSoundOn);
-    setTimeout(() => feedEl.current?.focus(), 300);
-  }
-
-  function enableSound(e) {
-    applySoundToActiveVideo(true, e);
-  }
-
-  function toggleSound(e) {
-    applySoundToActiveVideo(!soundOn, e);
+    const nowMuted = !muted;
+    const item = feedRef.current[activeIdxRef.current];
+    if (item?._type === "youtube") {
+      const f = iframeRefs.current[item.videoId];
+      nowMuted ? ytCmd(f, "mute") : (ytCmd(f, "unMute"), ytCmd(f, "setVolume", [100]));
+    }
+    setMuted(nowMuted);
   }
 
   // ── Like / save ────────────────────────────────────────────────────────────
@@ -502,33 +300,18 @@ export default function Home({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const emptyMsg = !skills.length
-    ? "Add skills to see videos"
-    : searchLoading
-      ? "Searching…"
-      : trimmedSearch
-        ? `No results for "${trimmedSearch}"`
-        : loading
-          ? "Loading…"
-          : `No ${activeSkill} videos yet.`;
+  if (feed.length === 0) {
+    return (
+      <div className="feedEmptyState">
+        {!skills.length ? "Add skills to see videos" : loading ? "Loading…" : `No ${activeSkill} videos yet.`}
+      </div>
+    );
+  }
 
   return (
     <>
-      {/* Fixed overlay header — always rendered so search bar stays visible */}
+      {/* Skill tabs pinned at top */}
       <div className="feedHeader">
-        {firstName && <p className="feedHeaderTitle">For {firstName}</p>}
-        <div className="feedSearchBar">
-          <span>🔍</span>
-          <input
-            type="text"
-            placeholder={`Search ${activeSkill} videos…`}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button className="feedSearchClear" onClick={() => setSearchQuery("")}>✕</button>
-          )}
-        </div>
         <div className="feedSkillTabsRow">
           <div className="feedSkillTabs">
             {skills.map(s => (
@@ -541,22 +324,18 @@ export default function Home({
               </button>
             ))}
           </div>
-          {(addMoreSkills || removeSkill) && (
-            <button className="editSkillsBtn" onClick={() => setShowSkillsSheet(true)}>⚙ Skills</button>
+          {addMoreSkills && (
+            <button className="editSkillsBtn" onClick={addMoreSkills}>+ Skills</button>
           )}
         </div>
       </div>
 
-      {feed.length === 0 ? (
-        <div className="feedEmptyState">{emptyMsg}</div>
-      ) : (
-      /* Full-screen snap feed */
+      {/* Full-screen snap feed */}
       <div className="tiktokFeed" ref={feedEl} tabIndex={-1} style={{ touchAction: "pan-y" }}>
         {feed.map((item, idx) => {
           const isYt     = item._type === "youtube";
           const isFailed = isYt && failed.has(item.videoId);
           const isActive = idx === activeIndex;
-          const showSoundAction = !(isMobile && isYt && !isFailed);
 
           return (
             <div
@@ -570,7 +349,6 @@ export default function Home({
                 if (el) obsRef.current?.observe(el);
               }}
               onTouchStart={() => {
-                // Blur any focused iframe so vertical swipes reach the scroll container
                 if (document.activeElement?.tagName === "IFRAME") {
                   document.activeElement.blur();
                 }
@@ -590,61 +368,39 @@ export default function Home({
                         else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
                       }}
                       className="tiktokSlideMedia tiktokYtFrame"
-                      src={isMobile ? ytSrcManual(item.videoId) : ytSrcSound(item.videoId)}
+                      src={ytSrc(item.videoId)}
                       allow="autoplay; encrypted-media"
                       allowFullScreen
-                      onLoad={() => setTimeout(() => {
-                        const active = feedRef.current[activeIdxRef.current];
-                        if (active?._type === "youtube" && active.videoId === item.videoId && !isMobile) {
-                          applySoundToIframe(iframeRefs.current[item.videoId], soundOnRef.current);
-                        }
-                      }, 100)}
                     />
-                    {!isMobile && (
-                      <div
-                        style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
-                        onTouchStart={() => {
-                          document.activeElement?.blur();
-                          feedEl.current?.focus();
-                        }}
-                        onClick={() => togglePlayPause(item.videoId)}
-                      />
-                    )}
-                    {/* Bottom swipe zone: always captures vertical pan gestures even
-                        when the iframe has claimed touch events after an interaction. */}
+                    {/* Transparent overlay — blocks YouTube bottom bar from capturing
+                        swipe gestures; blurs iframe on touch to keep scroll-snap working */}
+                    <div
+                      style={{ position: "absolute", inset: 0, zIndex: 1 }}
+                      onTouchStart={() => {
+                        document.activeElement?.blur();
+                        feedEl.current?.focus();
+                      }}
+                    />
+                    {/* Bottom zone always routes vertical swipes to the scroll container */}
                     <div className="slideSwipeZone" />
                   </>
                 ) : (
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
               ) : item.mediaType?.startsWith("video") ? (
-                <video src={item.mediaUrl} className="tiktokSlideMedia" loop muted={!soundOn} playsInline autoPlay />
+                <video src={item.mediaUrl} className="tiktokSlideMedia" loop muted playsInline autoPlay />
               ) : (
                 <img src={item.mediaUrl} className="tiktokSlideMedia" alt={item.caption} />
               )}
 
-              {isActive && !soundOn && !isFailed && !isYt && item.mediaType?.startsWith("video") && (
-                <button className="tapForSoundButton" onClick={enableSound}>
-                  🔊 Tap for sound
-                </button>
-              )}
-
-              {isYt && !isFailed && isActive && !isMobile && (
-                <input
-                  type="range"
-                  className="ytSeekBar"
-                  min={0}
-                  max={vidDuration || 100}
-                  step={0.1}
-                  value={vidCurrentTime}
-                  onChange={e => {
-                    const t = parseFloat(e.target.value);
-                    setVidCurrentTime(t);
-                    ytCmd(iframeRefs.current[item.videoId], "seekTo", [t, true]);
-                  }}
-                  onPointerDown={() => { isDraggingRef.current = true; }}
-                  onPointerUp={()   => { isDraggingRef.current = false; }}
-                />
+              {isYt && !isFailed && isActive && (
+                <div
+                  className="pausedPlayIndicator"
+                  ref={el => { if (el) pauseIndRefs.current[item.videoId] = el; else delete pauseIndRefs.current[item.videoId]; }}
+                  style={{ display: "none", pointerEvents: "none" }}
+                >
+                  ⏸
+                </div>
               )}
 
               <div className="tiktokGradient" />
@@ -703,21 +459,14 @@ export default function Home({
                     >📤</button>
                   </>
                 )}
-                {showSoundAction && (
-                  <button
-                    className={`tiktokActionBtn${soundOn ? " tiktokActionActive" : ""}`}
-                    onClick={toggleSound}
-                    aria-label={soundOn ? "Mute video sound" : "Turn on video sound"}
-                  >
-                    {soundOn ? "🔊" : "🔇"}
-                  </button>
-                )}
+                <button className="tiktokActionBtn" onClick={toggleMute}>
+                  {muted ? "🔊" : "🔇"}
+                </button>
               </div>
             </div>
           );
         })}
       </div>
-      )}
 
       {shareTarget && (
         <ShareModal
@@ -726,31 +475,6 @@ export default function Home({
           onSend={uid => onShareToFriend(uid, shareTarget)}
           onClose={() => setShareTarget(null)}
         />
-      )}
-
-      {showSkillsSheet && (
-        <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)}>
-          <div className="skillsSheet" onClick={e => e.stopPropagation()}>
-            <div className="skillsSheetHandle" />
-            <p className="skillsSheetTitle">My Skills</p>
-            <ul className="skillsSheetList">
-              {skills.map(s => (
-                <li key={s} className="skillsSheetItem">
-                  <span>{skillEmoji(s)} {s}</span>
-                  {skills.length > 1 && removeSkill && (
-                    <button className="skillsSheetRemove" onClick={() => removeSkill(s)}>✕</button>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {addMoreSkills && (
-              <button
-                className="skillsSheetAdd"
-                onClick={() => { setShowSkillsSheet(false); addMoreSkills(); }}
-              >+ Add New Skill</button>
-            )}
-          </div>
-        </div>
       )}
     </>
   );
