@@ -4,17 +4,16 @@ import ShareModal from "../components/ShareModal";
 
 // ── YouTube helpers ────────────────────────────────────────────────────────────
 
-// mute=1 so the player can autoplay before the user has gestured
-function ytSrc(videoId) {
+function ytSrcSound(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
   );
 }
 
-function ytSrcSound(videoId) {
+function ytSrcManual(videoId) {
   return (
-    `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1` +
+    `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1` +
     `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
   );
 }
@@ -31,7 +30,19 @@ function ytCmd(iframe, fn, args = []) {
 // ── Position / skill persistence ──────────────────────────────────────────────
 
 const LS_SKILL_KEY = "habi_lastSkill";
+const LS_SOUND_KEY = "habi_soundOn";
 const lsIdxKey = s => `habi_idx_${s}`;
+
+function readSoundPreference() {
+  try { return localStorage.getItem(LS_SOUND_KEY) === "true"; }
+  catch { return false; }
+}
+
+function writeSoundPreference(soundOn) {
+  try { localStorage.setItem(LS_SOUND_KEY, String(soundOn)); }
+  catch { return false; }
+  return true;
+}
 
 function readSavedIdx(skill) {
   const v = parseInt(localStorage.getItem(lsIdxKey(skill)), 10);
@@ -89,7 +100,7 @@ export default function Home({
   const [shareTarget, setShareTarget] = useState(null);
 
   const [showSkillsSheet, setShowSkillsSheet] = useState(false);
-  const [muted,           setMuted]           = useState(false);
+  const [soundOn,         setSoundOn]         = useState(() => !isMobile && readSoundPreference());
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -108,9 +119,13 @@ export default function Home({
   const pendingSkillRestoreRef = useRef(false);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
-  const mutedRef     = useRef(muted); mutedRef.current   = muted;
+  const soundOnRef   = useRef(soundOn);
 
   const YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
+
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
 
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -339,22 +354,43 @@ export default function Home({
     return () => obsRef.current?.disconnect();
   }, []);
 
-  // ── When active index changes, play it if the iframe is already ready ─────
-  // (usually onReady fires after mount and handles it; this covers fast swipes
-  //  where the iframe was pre-mounted from a previous render cycle)
+  // ── Active media playback / sound handoff ─────────────────────────────────
+
+  function applySoundToIframe(iframe, nextSoundOn) {
+    if (!iframe) return;
+    if (nextSoundOn) {
+      ytCmd(iframe, "unMute");
+      ytCmd(iframe, "setVolume", [100]);
+    } else {
+      ytCmd(iframe, "mute");
+    }
+    ytCmd(iframe, "playVideo");
+  }
+
+  function applySoundToNativeVideo(video, nextSoundOn) {
+    if (!video) return;
+    video.muted = !nextSoundOn;
+    if (nextSoundOn) video.volume = 1;
+    video.play?.().catch(() => {});
+  }
+
+  function applySoundToActiveMedia(nextSoundOn = soundOnRef.current) {
+    const item = feedRef.current[activeIdxRef.current];
+    const activeSlide = slideRefs.current[activeIdxRef.current];
+    applySoundToNativeVideo(activeSlide?.querySelector("video"), nextSoundOn);
+
+    if (item?._type === "youtube") {
+      if (isMobile) return;
+      applySoundToIframe(iframeRefs.current[item.videoId], nextSoundOn);
+    }
+  }
 
   useEffect(() => {
     setVidCurrentTime(0);
     setVidDuration(0);
-
-    const item = feedRef.current[activeIndex];
-    if (!item || item._type !== "youtube") return;
-
-    const f = iframeRefs.current[item.videoId];
-    if (f && readySet.current.has(item.videoId)) {
-      if (mutedRef.current) ytCmd(f, "mute");
-      ytCmd(f, "playVideo");
-    }
+    applySoundToActiveMedia();
+    const retry = setTimeout(() => applySoundToActiveMedia(), 150);
+    return () => clearTimeout(retry);
   }, [activeIndex]); // eslint-disable-line
 
   // ── Auto-skip unembeddable ─────────────────────────────────────────────────
@@ -383,8 +419,7 @@ export default function Home({
         readySet.current.add(vid);
         const active = feedRef.current[activeIdxRef.current];
         if (active?._type === "youtube" && active.videoId === vid) {
-          if (mutedRef.current) ytCmd(iframeRefs.current[vid], "mute");
-          ytCmd(iframeRefs.current[vid], "playVideo");
+          if (!isMobile) applySoundToIframe(iframeRefs.current[vid], soundOnRef.current);
         } else {
           ytCmd(iframeRefs.current[vid], "pauseVideo");
         }
@@ -393,6 +428,14 @@ export default function Home({
       if (d.event === "onStateChange") {
         if (d.info === 1) isPausedRef.current = false; // playing
         if (d.info === 2) isPausedRef.current = true;  // paused
+        if (isMobile && d.info === 1) {
+          const active = feedRef.current[activeIdxRef.current];
+          if (active?._type === "youtube" && active.videoId === vid) {
+            soundOnRef.current = true;
+            setSoundOn(true);
+            writeSoundPreference(true);
+          }
+        }
       }
 
       if (d.event === "infoDelivery" && d.info) {
@@ -421,17 +464,23 @@ export default function Home({
     setTimeout(() => feedEl.current?.focus(), 300);
   }
 
-  // ── Mute toggle ────────────────────────────────────────────────────────────
+  // ── Sound toggle ───────────────────────────────────────────────────────────
 
-  function toggleMute(e) {
+  function applySoundToActiveVideo(nextSoundOn, e) {
     e.stopPropagation();
-    const nowMuted = !muted;
-    const item = feedRef.current[activeIdxRef.current];
-    if (item?._type === "youtube") {
-      const f = iframeRefs.current[item.videoId];
-      nowMuted ? ytCmd(f, "mute") : (ytCmd(f, "unMute"), ytCmd(f, "setVolume", [100]));
-    }
-    setMuted(nowMuted);
+    soundOnRef.current = nextSoundOn;
+    applySoundToActiveMedia(nextSoundOn);
+    setSoundOn(nextSoundOn);
+    writeSoundPreference(nextSoundOn);
+    setTimeout(() => feedEl.current?.focus(), 300);
+  }
+
+  function enableSound(e) {
+    applySoundToActiveVideo(true, e);
+  }
+
+  function toggleSound(e) {
+    applySoundToActiveVideo(!soundOn, e);
   }
 
   // ── Like / save ────────────────────────────────────────────────────────────
@@ -507,6 +556,7 @@ export default function Home({
           const isYt     = item._type === "youtube";
           const isFailed = isYt && failed.has(item.videoId);
           const isActive = idx === activeIndex;
+          const showSoundAction = !(isMobile && isYt && !isFailed);
 
           return (
             <div
@@ -540,20 +590,26 @@ export default function Home({
                         else { delete iframeRefs.current[item.videoId]; readySet.current.delete(item.videoId); }
                       }}
                       className="tiktokSlideMedia tiktokYtFrame"
-                      src={isMobile ? ytSrc(item.videoId) : ytSrcSound(item.videoId)}
+                      src={isMobile ? ytSrcManual(item.videoId) : ytSrcSound(item.videoId)}
                       allow="autoplay; encrypted-media"
                       allowFullScreen
+                      onLoad={() => setTimeout(() => {
+                        const active = feedRef.current[activeIdxRef.current];
+                        if (active?._type === "youtube" && active.videoId === item.videoId && !isMobile) {
+                          applySoundToIframe(iframeRefs.current[item.videoId], soundOnRef.current);
+                        }
+                      }, 100)}
                     />
-                    {/* Overlay covers the full slide. onTouchStart blurs the iframe
-                        before the gesture reaches it, restoring scroll-snap swiping. */}
-                    <div
-                      style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
-                      onTouchStart={() => {
-                        document.activeElement?.blur();
-                        feedEl.current?.focus();
-                      }}
-                      onClick={() => togglePlayPause(item.videoId)}
-                    />
+                    {!isMobile && (
+                      <div
+                        style={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}
+                        onTouchStart={() => {
+                          document.activeElement?.blur();
+                          feedEl.current?.focus();
+                        }}
+                        onClick={() => togglePlayPause(item.videoId)}
+                      />
+                    )}
                     {/* Bottom swipe zone: always captures vertical pan gestures even
                         when the iframe has claimed touch events after an interaction. */}
                     <div className="slideSwipeZone" />
@@ -562,12 +618,18 @@ export default function Home({
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
               ) : item.mediaType?.startsWith("video") ? (
-                <video src={item.mediaUrl} className="tiktokSlideMedia" loop muted playsInline autoPlay />
+                <video src={item.mediaUrl} className="tiktokSlideMedia" loop muted={!soundOn} playsInline autoPlay />
               ) : (
                 <img src={item.mediaUrl} className="tiktokSlideMedia" alt={item.caption} />
               )}
 
-              {isYt && !isFailed && isActive && (
+              {isActive && !soundOn && !isFailed && !isYt && item.mediaType?.startsWith("video") && (
+                <button className="tapForSoundButton" onClick={enableSound}>
+                  🔊 Tap for sound
+                </button>
+              )}
+
+              {isYt && !isFailed && isActive && !isMobile && (
                 <input
                   type="range"
                   className="ytSeekBar"
@@ -641,9 +703,15 @@ export default function Home({
                     >📤</button>
                   </>
                 )}
-                <button className="tiktokActionBtn" onClick={toggleMute}>
-                  {muted ? "🔊" : "🔇"}
-                </button>
+                {showSoundAction && (
+                  <button
+                    className={`tiktokActionBtn${soundOn ? " tiktokActionActive" : ""}`}
+                    onClick={toggleSound}
+                    aria-label={soundOn ? "Mute video sound" : "Turn on video sound"}
+                  >
+                    {soundOn ? "🔊" : "🔇"}
+                  </button>
+                )}
               </div>
             </div>
           );
