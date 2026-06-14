@@ -887,27 +887,6 @@ textarea {
   height: calc(100% + 60px);
 }
 
-.ytPlayBtn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  color: #fff;
-  font-size: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-left: 5px;
-  z-index: 4;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
 /* Transparent strip at the bottom of each slide that always intercepts vertical
    swipe gestures, even after the iframe has claimed touch handling. */
 .slideSwipeZone {
