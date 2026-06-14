@@ -4856,7 +4856,7 @@ textarea::placeholder {
   border: 1px solid var(--border, #e8e0db);
   border-radius: 20px;
   padding: 7px 13px;
-  font-size: 13.5px;
+  font-size: 16px;
   background: var(--surface, #ede8e4);
   color: var(--text, #1f1f1f);
   outline: none;
