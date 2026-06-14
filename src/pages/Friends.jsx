@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  where,
+  writeBatch,
+} from "firebase/firestore";
+import { db } from "../firebase";
 
 function timeAgo(ts) {
   if (!ts) return "";
@@ -19,7 +31,6 @@ function notifIcon(type) {
   if (type === "post_like")       return "❤️";
   return "🔔";
 }
-import { db } from "../firebase";
 
 const INVITE_URL  = "https://habi-sepia.vercel.app";
 const INVITE_TEXT = "Join me on Habi — the app for learning new skills! Sign up here: " + INVITE_URL;
@@ -72,7 +83,6 @@ export default function Friends({
   friendRequests,
   handleAcceptFriendRequest,
   handleDeclineFriendRequest,
-  setTab,
   currentUser,
   username,
   handleLikePost,
@@ -84,6 +94,12 @@ export default function Friends({
   const [showRequests,          setShowRequests]          = useState(false);
   const [toast,                 setToast]                 = useState(false);
 
+  // inline comments
+  const [expandedPostId, setExpandedPostId] = useState(null);
+  const [postComments,   setPostComments]   = useState([]);
+  const [newComment,     setNewComment]     = useState("");
+
+  // ── Load friend request profiles ──────────────────────────────────────────
   useEffect(() => {
     async function load() {
       const pending = friendRequests.filter((uid) => !friends.includes(uid));
@@ -99,6 +115,7 @@ export default function Friends({
     load();
   }, [friendRequests, friends]);
 
+  // ── Load friend profiles ──────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
       if (!friends.length) { setFriendProfiles([]); return; }
@@ -113,7 +130,20 @@ export default function Friends({
     load();
   }, [friends]);
 
-  // Progress posts only — no tutorials
+  // ── Comments subscription for expanded post ───────────────────────────────
+  useEffect(() => {
+    if (!expandedPostId) { setPostComments([]); return; }
+    const q = query(collection(db, "comments"), where("postId", "==", expandedPostId));
+    return onSnapshot(q, (snap) => {
+      setPostComments(
+        snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(c => !c.parentCommentId)
+          .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+      );
+    });
+  }, [expandedPostId]);
+
   const progressPosts = friendPosts.filter((p) => p.postType !== "tutorial");
 
   const selectedPosts = selectedFriend
@@ -128,12 +158,39 @@ export default function Friends({
     if (!unread.length) return;
     const batch = writeBatch(db);
     unread.forEach((n) => {
-      batch.update(doc(db, "notifications", n.id), {
-        read: true,
-        readAt: serverTimestamp(),
-      });
+      batch.update(doc(db, "notifications", n.id), { read: true, readAt: serverTimestamp() });
     });
     await batch.commit();
+  }
+
+  async function submitComment(postId) {
+    if (!newComment.trim() || !currentUser) return;
+    const post = progressPosts.find(p => p.id === postId);
+    await addDoc(collection(db, "comments"), {
+      postId,
+      postOwnerId: post?.userId,
+      userId: currentUser.uid,
+      username,
+      text: newComment.trim(),
+      createdAt: serverTimestamp(),
+    });
+    setNewComment("");
+  }
+
+  async function removeComment(commentId) {
+    await deleteDoc(doc(db, "comments", commentId));
+  }
+
+  function sharePost(post) {
+    const url = INVITE_URL;
+    const text = `@${post.username}${post.caption ? `: ${post.caption}` : ""} — on Habi`;
+    if (navigator.share) {
+      navigator.share({ title: "Habi", text, url }).catch((e) => {
+        if (e.name !== "AbortError") { copyText(`${text}\n${url}`); setToast(true); setTimeout(() => setToast(false), 2500); }
+      });
+    } else {
+      copyText(`${text}\n${url}`).then(() => { setToast(true); setTimeout(() => setToast(false), 2500); }).catch(() => {});
+    }
   }
 
   // ── Notifications panel ───────────────────────────────────────────────────
@@ -242,7 +299,6 @@ export default function Friends({
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="friendsPage">
-      {/* Top bar */}
       <div className="friendsTopBar">
         <h1 className="friendsTitle">Friends</h1>
         <button className="friendsBellBtn" onClick={() => { setShowRequests(true); markAsRead(); }}>
@@ -282,7 +338,7 @@ export default function Friends({
 
         <div className="igDivider" />
 
-        {/* Instagram-style feed */}
+        {/* Feed */}
         {progressPosts.length === 0 ? (
           friends.length > 0 && (
             <p className="igEmptyFeed">Your friends haven't posted yet 👀</p>
@@ -290,9 +346,10 @@ export default function Friends({
         ) : (
           <div className="igFeed">
             {progressPosts.map((post) => {
-              const isLiked = likedPosts?.includes(post.id);
+              const isLiked  = post.likes?.includes(currentUser?.uid) || likedPosts?.includes(post.id);
               const likeCount = post.likes?.length ?? 0;
-              const poster = friendProfiles.find((f) => f.uid === post.userId);
+              const poster   = friendProfiles.find((f) => f.uid === post.userId);
+              const expanded = expandedPostId === post.id;
 
               return (
                 <div key={post.id} className="igPost">
@@ -318,12 +375,7 @@ export default function Friends({
 
                   {/* Media */}
                   {post.mediaType?.startsWith("video") ? (
-                    <video
-                      src={post.mediaUrl}
-                      className="igPostMedia"
-                      controls
-                      playsInline
-                    />
+                    <video src={post.mediaUrl} className="igPostMedia" controls playsInline />
                   ) : (
                     <img src={post.mediaUrl} alt="post" className="igPostMedia" />
                   )}
@@ -333,24 +385,33 @@ export default function Friends({
                     <button
                       className={`igLikeBtn${isLiked ? " igLikeActive" : ""}`}
                       onClick={() => handleLikePost?.(post)}
-                      disabled={isLiked || post.userId === currentUser?.uid}
                       aria-label="Like"
                     >
                       {isLiked ? "❤️" : "🤍"}
                     </button>
                     <button
-                      className="igMsgBtn"
-                      onClick={() => setTab("messages")}
-                      aria-label="Message"
+                      className={`igMsgBtn${expanded ? " igMsgActive" : ""}`}
+                      onClick={() => {
+                        setExpandedPostId(expanded ? null : post.id);
+                        setNewComment("");
+                      }}
+                      aria-label="Comments"
                     >
                       💬
+                    </button>
+                    <button
+                      className="igMsgBtn"
+                      onClick={() => sharePost(post)}
+                      aria-label="Share"
+                    >
+                      ↗
                     </button>
                   </div>
 
                   {/* Footer */}
-                  {(likeCount > 0 || post.caption) && (
+                  {((!poster?.hideLikeCount && likeCount > 0) || post.caption) && (
                     <div className="igPostFooter">
-                      {likeCount > 0 && (
+                      {!poster?.hideLikeCount && likeCount > 0 && (
                         <p className="igLikeCount">
                           {likeCount} {likeCount === 1 ? "like" : "likes"}
                         </p>
@@ -363,13 +424,46 @@ export default function Friends({
                       )}
                     </div>
                   )}
+
+                  {/* Inline comments */}
+                  {expanded && (
+                    <div className="igComments">
+                      {postComments.length === 0 ? (
+                        <p className="igCommentsEmpty">No comments yet</p>
+                      ) : (
+                        postComments.map(c => (
+                          <div key={c.id} className="igComment">
+                            <span className="igCommentUser">@{c.username}</span>
+                            <span className="igCommentText">{c.text}</span>
+                            {c.userId === currentUser?.uid && (
+                              <button className="igCommentDel" onClick={() => removeComment(c.id)}>✕</button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                      <div className="igCommentBar">
+                        <input
+                          className="igCommentInput"
+                          value={newComment}
+                          onChange={e => setNewComment(e.target.value)}
+                          placeholder="Add a comment…"
+                          onKeyDown={e => { if (e.key === "Enter") submitComment(post.id); }}
+                        />
+                        <button
+                          className="igCommentSend"
+                          onClick={() => submitComment(post.id)}
+                          disabled={!newComment.trim()}
+                        >↑</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
 
-        {/* Invite card — bottom of feed */}
+        {/* Invite card */}
         <button className="fpInviteCard" onClick={() => shareInvite(setToast)}>
           <p>Invite Friends</p>
           <p className="fpInviteSub">Share Habi and learn together →</p>

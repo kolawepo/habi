@@ -34,6 +34,8 @@ export default function Profile({
   savedVideos,
   profilePhotoUrl,
   setProfilePhotoUrl,
+  hideLikeCount,
+  onToggleHideLikeCount,
 }) {
   const [selectedUpload, setSelectedUpload] = useState(null);
 
@@ -433,6 +435,16 @@ async function changeUsername() {
         <span>{darkMode ? "Dark mode" : "Light mode"}</span>
         <button className="themeToggleBtn" onClick={toggleDarkMode}>
           {darkMode ? "☀️" : "🌙"}
+        </button>
+      </div>
+
+      <div className="themeToggleRow">
+        <span>Hide like count on my posts</span>
+        <button
+          className={`themeToggleBtn settingsToggle${hideLikeCount ? " settingsToggleOn" : ""}`}
+          onClick={onToggleHideLikeCount}
+        >
+          {hideLikeCount ? "ON" : "OFF"}
         </button>
       </div>
 

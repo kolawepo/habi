@@ -146,6 +146,14 @@ function toggleDarkMode() {
   }
 }
 
+async function toggleHideLikeCount() {
+  const next = !hideLikeCount;
+  setHideLikeCount(next);
+  if (currentUser) {
+    await updateDoc(doc(db, "users", currentUser.uid), { hideLikeCount: next });
+  }
+}
+
 // Presence: stamp lastSeen on open and every time the tab comes back to foreground
 useEffect(() => {
   if (!currentUser) return;
@@ -159,7 +167,8 @@ useEffect(() => {
 
 const [streak, setStreak] = useState(0);
 
-  const [likedPosts, setLikedPosts] = useState([]);
+  const [likedPosts,     setLikedPosts]     = useState([]);
+  const [hideLikeCount,  setHideLikeCount]  = useState(false);
 
   const [sharedVideos, setSharedVideos] = useState([]);
 
@@ -212,6 +221,7 @@ const [streak, setStreak] = useState(0);
             setLikedVideos(userData.likedVideos || []);
             setSavedVideos(userData.savedVideos || []);
             if (userData.darkMode !== undefined) setDarkMode(userData.darkMode);
+            setHideLikeCount(userData.hideLikeCount || false);
 
             setScreen("main");
           } else {
@@ -291,6 +301,7 @@ const [streak, setStreak] = useState(0);
     setProfilePhotoUrl(data.profilePhotoUrl || "");
     setUsername(data.username || "");
     setSelectedSkills(data.selectedSkills || []);
+    setHideLikeCount(data.hideLikeCount || false);
   });
 
   return () => unsubscribe();
@@ -648,45 +659,69 @@ async function handleRemoveFriend
 
     const participants = [currentUser.uid, recipientUid].sort();
     const conversationId = participants.join("_");
+    const isPostShare = Boolean(videoData.postId);
+    const lastMessage = isPostShare
+      ? `Shared a post from @${videoData.postUsername || videoData.username}`
+      : `Shared: ${videoData.title}`;
 
     await setDoc(
       doc(db, "dms", conversationId),
       {
         participants,
-        lastMessage: `Shared: ${videoData.title}`,
+        lastMessage,
         lastMessageAt: serverTimestamp(),
       },
       { merge: true }
     );
 
-    await addDoc(collection(db, "dms", conversationId, "messages"), {
+    const message = {
       senderId: currentUser.uid,
       senderUsername: username,
-      videoId: videoData.videoId,
-      videoTitle: videoData.title,
-      videoThumbnail: videoData.thumbnail,
-      videoSkill: videoData.skill,
       text: "",
       createdAt: serverTimestamp(),
-    });
+    };
+
+    if (isPostShare) {
+      Object.assign(message, {
+        postId: videoData.postId,
+        postCaption: videoData.postCaption || videoData.caption || "",
+        postMediaUrl: videoData.postMediaUrl || videoData.mediaUrl,
+        postMediaType: videoData.postMediaType || videoData.mediaType,
+        postUsername: videoData.postUsername || videoData.username,
+        postSkill: videoData.postSkill || videoData.skill,
+      });
+    } else {
+      Object.assign(message, {
+        videoId: videoData.videoId,
+        videoTitle: videoData.title,
+        videoThumbnail: videoData.thumbnail,
+        videoSkill: videoData.skill,
+      });
+    }
+
+    await addDoc(collection(db, "dms", conversationId, "messages"), message);
 
     sendPushNotification(
       recipientUid,
-      `${username} sent you a video`,
-      videoData.title,
+      `${username} sent you ${isPostShare ? "a post" : "a video"}`,
+      isPostShare ? (videoData.postCaption || videoData.caption || "Shared a post") : videoData.title,
       `/?tab=messages&uid=${currentUser.uid}`
     );
   }
 
   async function handleLikePost(post) {
     if (!currentUser || post.userId === currentUser.uid) return;
-    if (likedPosts.includes(post.id)) return;
+    const isLiked = post.likes?.includes(currentUser.uid) || likedPosts.includes(post.id);
 
-    setLikedPosts((prev) => [...prev, post.id]);
+    setLikedPosts((prev) =>
+      isLiked ? prev.filter((id) => id !== post.id) : [...new Set([...prev, post.id])]
+    );
 
     await updateDoc(doc(db, "posts", post.id), {
-      likes: arrayUnion(currentUser.uid),
+      likes: isLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid),
     });
+
+    if (isLiked) return;
 
     await addDoc(collection(db, "notifications"), {
       userId: post.userId,
@@ -1000,6 +1035,8 @@ async function handleRemoveFriend
           toggleDarkMode={toggleDarkMode}
           handleLikePost={handleLikePost}
           likedPosts={likedPosts}
+          hideLikeCount={hideLikeCount}
+          onToggleHideLikeCount={toggleHideLikeCount}
           openMessageUid={openMessageUid}
           onClearOpenUid={() => setOpenMessageUid(null)}
           />
@@ -1009,5 +1046,4 @@ async function handleRemoveFriend
     </div>
   );
 }
-
 

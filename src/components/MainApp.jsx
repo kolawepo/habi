@@ -54,6 +54,8 @@ export default function MainApp({
   likedPosts,
   openMessageUid,
   onClearOpenUid,
+  hideLikeCount,
+  onToggleHideLikeCount,
 }) {
   const [showSearch, setShowSearch] = useState(false);
 
@@ -92,6 +94,7 @@ export default function MainApp({
             username={username}
             handleLikePost={handleLikePost}
             likedPosts={likedPosts}
+            onShareToFriend={onShareToFriend}
           />
         )}
 
@@ -133,6 +136,8 @@ export default function MainApp({
             handleDeletePost={handleDeletePost}
             profilePhotoUrl={profilePhotoUrl}
             setProfilePhotoUrl={setProfilePhotoUrl}
+            hideLikeCount={hideLikeCount}
+            onToggleHideLikeCount={onToggleHideLikeCount}
           />
         )}
       </div>
@@ -151,4 +156,3 @@ export default function MainApp({
     </section>
   );
 }
-
