@@ -11,6 +11,9 @@ import {
   doc,
   setDoc,
   getDoc,
+  deleteDoc,
+  updateDoc,
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { sendPushNotification } from "../utils/notify";
@@ -19,9 +22,9 @@ function timeAgo(ts) {
   if (!ts) return "";
   const date = ts.toDate ? ts.toDate() : new Date(ts);
   const diff = Date.now() - date.getTime();
-  if (diff < 60000)      return "now";
-  if (diff < 3600000)    return `${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000)   return `${Math.floor(diff / 3600000)}h`;
+  if (diff < 60000)    return "now";
+  if (diff < 3600000)  return `${Math.floor(diff / 60000)}m`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
   return `${Math.floor(diff / 86400000)}d`;
 }
 
@@ -33,13 +36,16 @@ export default function Messages({ currentUser, username, friends, openConvoWith
   const [profiles,       setProfiles]       = useState({});
   const [friendProfiles, setFriendProfiles] = useState([]);
   const [showCompose,    setShowCompose]    = useState(false);
-  const threadRef  = useRef(null);
-  const sendingRef = useRef(false);
+  const [deletingMsgId,  setDeletingMsgId]  = useState(null);
+
+  const threadRef      = useRef(null);
+  const threadPageRef  = useRef(null);
+  const sendingRef     = useRef(false);
+  const longPressTimer = useRef(null);
 
   // ── Conversations list ────────────────────────────────────────────────────
   useEffect(() => {
     if (!currentUser) return;
-    console.log("[Messages] subscribing to dms for uid:", currentUser.uid);
     const q = query(
       collection(db, "dms"),
       where("participants", "array-contains", currentUser.uid)
@@ -47,12 +53,8 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     return onSnapshot(
       q,
       (snap) => {
-        console.log("[Messages] dms snapshot — docs:", snap.docs.length);
         const convos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        convos.sort(
-          (a, b) =>
-            (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0)
-        );
+        convos.sort((a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0));
         setConversations(convos);
       },
       (err) => console.error("[Messages] dms query failed:", err.code, err.message)
@@ -71,7 +73,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
       ];
       const missing = uids.filter((uid) => !profiles[uid]);
       if (!missing.length) return;
-
       const result = {};
       await Promise.all(
         missing.map(async (uid) => {
@@ -79,9 +80,7 @@ export default function Messages({ currentUser, username, friends, openConvoWith
           if (snap.exists()) result[uid] = snap.data();
         })
       );
-      if (Object.keys(result).length > 0) {
-        setProfiles((prev) => ({ ...prev, ...result }));
-      }
+      if (Object.keys(result).length > 0) setProfiles((prev) => ({ ...prev, ...result }));
     }
     if (conversations.length > 0 && currentUser) load();
   }, [conversations, currentUser]);
@@ -99,9 +98,7 @@ export default function Messages({ currentUser, username, friends, openConvoWith
           if (snap.exists()) result[uid] = snap.data();
         })
       );
-      setFriendProfiles(
-        Object.entries(result).map(([uid, data]) => ({ uid, ...data }))
-      );
+      setFriendProfiles(Object.entries(result).map(([uid, data]) => ({ uid, ...data })));
     }
     load();
   }, [friends, profiles]);
@@ -109,17 +106,13 @@ export default function Messages({ currentUser, username, friends, openConvoWith
   // ── Active thread messages ────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedConvo) return;
-    console.log("[Messages] subscribing to thread:", selectedConvo.id);
     const q = query(
       collection(db, "dms", selectedConvo.id, "messages"),
       orderBy("createdAt", "asc")
     );
     return onSnapshot(
       q,
-      (snap) => {
-        console.log("[Messages] thread snapshot — messages:", snap.docs.length);
-        setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      },
+      (snap) => setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
       (err) => console.error("[Messages] thread query failed:", err.code, err.message)
     );
   }, [selectedConvo]);
@@ -130,6 +123,20 @@ export default function Messages({ currentUser, username, friends, openConvoWith
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // ── iOS keyboard: use visualViewport to push input above keyboard ─────────
+  useEffect(() => {
+    if (!selectedConvo) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function onResize() {
+      if (!threadPageRef.current) return;
+      const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      threadPageRef.current.style.paddingBottom = keyboardH > 0 ? `${keyboardH}px` : "";
+    }
+    vv.addEventListener("resize", onResize);
+    return () => { vv.removeEventListener("resize", onResize); };
+  }, [selectedConvo]);
 
   // ── Deep-link: open conversation when notified ───────────────────────────
   useEffect(() => {
@@ -145,7 +152,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     sendingRef.current = true;
     const trimmed = text.trim();
     setText("");
-
     const convoRef = doc(db, "dms", selectedConvo.id);
     await setDoc(
       convoRef,
@@ -158,7 +164,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
       text: trimmed,
       createdAt: serverTimestamp(),
     });
-
     const otherUid = selectedConvo.participants.find((uid) => uid !== currentUser.uid);
     if (otherUid) {
       sendPushNotification(
@@ -171,6 +176,28 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     sendingRef.current = false;
   }
 
+  // ── Delete message for everyone (own messages) ────────────────────────────
+  async function deleteMsgForAll(msgId) {
+    setDeletingMsgId(null);
+    await deleteDoc(doc(db, "dms", selectedConvo.id, "messages", msgId));
+  }
+
+  // ── Remove message just for me (received messages) ────────────────────────
+  async function deleteMsgForMe(msgId) {
+    setDeletingMsgId(null);
+    await updateDoc(doc(db, "dms", selectedConvo.id, "messages", msgId), {
+      hiddenFor: arrayUnion(currentUser.uid),
+    });
+  }
+
+  // ── Long-press helpers ────────────────────────────────────────────────────
+  function startLongPress(msgId) {
+    longPressTimer.current = setTimeout(() => setDeletingMsgId(msgId), 480);
+  }
+  function cancelLongPress() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }
+
   // ── Open or create a conversation ─────────────────────────────────────────
   function openConvoWith(friendUid) {
     setShowCompose(false);
@@ -180,7 +207,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     if (existing) {
       setSelectedConvo(existing);
     } else {
-      // Stub — will be created in Firestore when first message is sent
       setSelectedConvo({ id: convoId, participants, lastMessage: "", lastMessageAt: null });
     }
   }
@@ -189,11 +215,15 @@ export default function Messages({ currentUser, username, friends, openConvoWith
   if (selectedConvo) {
     const otherUid = selectedConvo.participants.find((uid) => uid !== currentUser?.uid);
     const other = profiles[otherUid] || friendProfiles.find((f) => f.uid === otherUid) || {};
+    const visible = messages.filter(m => !m.hiddenFor?.includes(currentUser?.uid));
 
     return (
-      <div className="dmThreadPage">
+      <div className="dmThreadPage" ref={threadPageRef}>
         <div className="dmThreadHeader">
-          <button className="dmBackBtn" onClick={() => { setSelectedConvo(null); setMessages([]); }}>
+          <button
+            className="dmBackBtn"
+            onClick={() => { setSelectedConvo(null); setMessages([]); setDeletingMsgId(null); }}
+          >
             ←
           </button>
           <div className="dmThreadAvatar">
@@ -209,14 +239,69 @@ export default function Messages({ currentUser, username, friends, openConvoWith
           </div>
         </div>
 
-        <div className="dmThread" ref={threadRef}>
-          {messages.length === 0 && (
-            <div className="dmEmptyThread">Say hi! 👋</div>
-          )}
-          {messages.map((msg) => {
-            const isMe = msg.senderId === currentUser?.uid;
+        <div
+          className="dmThread"
+          ref={threadRef}
+          onClick={() => setDeletingMsgId(null)}
+        >
+          {visible.length === 0 && <div className="dmEmptyThread">Say hi! 👋</div>}
+
+          {visible.map((msg) => {
+            const isMe      = msg.senderId === currentUser?.uid;
+            const isDeleting = deletingMsgId === msg.id;
+
+            const longPressProps = {
+              onTouchStart:   () => startLongPress(msg.id),
+              onTouchEnd:     cancelLongPress,
+              onTouchMove:    cancelLongPress,
+              onContextMenu:  (e) => { e.preventDefault(); setDeletingMsgId(msg.id); },
+              onClick:        (e) => e.stopPropagation(),
+            };
+
+            const deleteBar = isDeleting && (
+              <div className="dmDeleteBar">
+                {isMe ? (
+                  <button className="dmDeleteBtn" onClick={(e) => { e.stopPropagation(); deleteMsgForAll(msg.id); }}>
+                    Delete for everyone
+                  </button>
+                ) : (
+                  <button className="dmDeleteBtn" onClick={(e) => { e.stopPropagation(); deleteMsgForMe(msg.id); }}>
+                    Remove for me
+                  </button>
+                )}
+              </div>
+            );
+
+            // ── Shared post: render as standalone mini-card ──────────────────
+            if (msg.postId) {
+              return (
+                <div
+                  key={msg.id}
+                  className={`dmPostCard${isMe ? " dmPostCardMine" : ""}${isDeleting ? " dmMsgDeleting" : ""}`}
+                  {...longPressProps}
+                >
+                  <div className="dmPostCardHeader">
+                    <span className="dmPostCardUser">@{msg.postUsername}</span>
+                    {msg.postSkill && <span className="dmPostCardSkill">{msg.postSkill}</span>}
+                  </div>
+                  {msg.postMediaType?.startsWith("video") ? (
+                    <video className="dmPostCardMedia" src={msg.postMediaUrl} playsInline controls />
+                  ) : (
+                    <img className="dmPostCardMedia" src={msg.postMediaUrl} alt="" />
+                  )}
+                  {msg.postCaption && <p className="dmPostCardCaption">{msg.postCaption}</p>}
+                  {deleteBar}
+                </div>
+              );
+            }
+
+            // ── Normal bubble (text or YouTube share) ────────────────────────
             return (
-              <div key={msg.id} className={`dmBubble ${isMe ? "dmMine" : "dmTheirs"}`}>
+              <div
+                key={msg.id}
+                className={`dmBubble ${isMe ? "dmMine" : "dmTheirs"}${isDeleting ? " dmMsgDeleting" : ""}`}
+                {...longPressProps}
+              >
                 {msg.videoId && (
                   <a
                     className="dmSharedVideo"
@@ -233,6 +318,7 @@ export default function Messages({ currentUser, username, friends, openConvoWith
                   </a>
                 )}
                 {msg.text && <p>{msg.text}</p>}
+                {deleteBar}
               </div>
             );
           })}
@@ -304,7 +390,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
         </div>
       )}
 
-      {/* Compose sheet */}
       {showCompose && createPortal(
         <div className="dmComposeOverlay" onClick={() => setShowCompose(false)}>
           <div className="dmComposeSheet" onClick={(e) => e.stopPropagation()}>

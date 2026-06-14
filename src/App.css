@@ -4278,9 +4278,7 @@ textarea::placeholder {
    DM THREAD
 ========================= */
 
-.dmThreadPage {
-  padding-bottom: 160px;
-}
+/* dmThreadPage: the full-screen thread is defined below */
 
 .dmHeader {
   display: flex;
@@ -5194,11 +5192,13 @@ textarea::placeholder {
   margin: 0;
 }
 
-/* ── Thread view ── */
+/* ── Thread view — fixed overlay so keyboard detection via visualViewport works ── */
 .dmThreadPage {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   display: flex;
   flex-direction: column;
-  height: 100%;
   background: var(--bg, #f6f1ee);
 }
 
@@ -5365,7 +5365,7 @@ textarea::placeholder {
   border: none;
   border-radius: 999px;
   padding: 12px 18px;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text, #111);
   outline: none;
   min-width: 0;
@@ -5390,6 +5390,81 @@ textarea::placeholder {
   transition: opacity 0.15s;
 }
 .dmSendBtn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Shared post card ── */
+.dmPostCard {
+  max-width: 78%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border, #e8e0db);
+  background: var(--surface, white);
+  align-self: flex-start;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  cursor: default;
+  transition: opacity 0.15s;
+}
+.dmPostCardMine { align-self: flex-end; }
+
+.dmPostCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px 6px;
+}
+
+.dmPostCardUser {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text, #1f1f1f);
+}
+
+.dmPostCardSkill {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--subtext, #888);
+  background: var(--bg, #f6f1ee);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.dmPostCardMedia {
+  width: 100%;
+  display: block;
+  aspect-ratio: 1;
+  object-fit: cover;
+  max-height: 240px;
+  background: #000;
+}
+
+.dmPostCardCaption {
+  font-size: 13px;
+  color: var(--text, #1f1f1f);
+  padding: 8px 12px;
+  margin: 0;
+  line-height: 1.4;
+  border-top: 1px solid var(--border, #e8e0db);
+}
+
+/* ── Message delete ── */
+.dmMsgDeleting { opacity: 0.6; }
+
+.dmDeleteBar {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 2px;
+}
+
+.dmDeleteBtn {
+  background: none;
+  border: none;
+  color: #e03535;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+}
 
 /* ── Compose sheet ── */
 .dmComposeOverlay {
