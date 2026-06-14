@@ -635,7 +635,7 @@ export default function Friends({
       {/* In-app friend picker */}
       {sharePickPost && (
         <ShareModal
-          friends={friends.filter(uid => uid !== sharePickPost.userId)}
+          friends={friends}
           videoTitle={`@${sharePickPost.username}: ${sharePickPost.caption || "Shared post"}`}
           onSend={sendToFriend}
           onClose={() => setSharePickPost(null)}
