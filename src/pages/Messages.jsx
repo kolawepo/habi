@@ -124,18 +124,29 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     }
   }, [messages]);
 
-  // ── iOS keyboard: use visualViewport to push input above keyboard ─────────
+  // ── iOS keyboard: shift the fixed input bar up when keyboard appears ────────
   useEffect(() => {
     if (!selectedConvo) return;
     const vv = window.visualViewport;
     if (!vv) return;
     function onResize() {
-      if (!threadPageRef.current) return;
       const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      threadPageRef.current.style.paddingBottom = keyboardH > 0 ? `${keyboardH}px` : "";
+      const inputEl = document.querySelector(".dmInputRow");
+      if (inputEl) {
+        const safeArea = parseInt(
+          getComputedStyle(document.documentElement).getPropertyValue("--sab") || "0"
+        ) || 0;
+        inputEl.style.bottom = keyboardH > 0
+          ? `${keyboardH}px`
+          : `calc(60px + env(safe-area-inset-bottom, 0px))`;
+      }
     }
     vv.addEventListener("resize", onResize);
-    return () => { vv.removeEventListener("resize", onResize); };
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      const inputEl = document.querySelector(".dmInputRow");
+      if (inputEl) inputEl.style.bottom = "";
+    };
   }, [selectedConvo]);
 
   // ── Deep-link: open conversation when notified ───────────────────────────

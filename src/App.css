@@ -5265,7 +5265,7 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 14px 10px;
+  padding: 16px 14px 60px;
 }
 
 .dmEmptyThread {
@@ -5350,13 +5350,16 @@ textarea::placeholder {
 }
 
 .dmInputRow {
+  position: fixed;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  z-index: 101;
   display: flex;
   gap: 10px;
   padding: 12px 14px;
   border-top: 1px solid var(--border, #e8e0db);
   background: var(--bg, #f6f1ee);
-  flex-shrink: 0;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 .dmInputRow input {
