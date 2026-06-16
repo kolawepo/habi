@@ -416,9 +416,7 @@ export default function Friends({
                       </div>
                     </button>
                     <div className="igPostUser">
-                      <p className="igPostUsername">
-                        {post.firstName || post.name?.split(" ")[0] || post.username}
-                      </p>
+                      <p className="igPostUsername">@{post.username}</p>
                     </div>
                   </div>
 
