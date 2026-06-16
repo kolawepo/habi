@@ -56,6 +56,7 @@ export default function MainApp({
   onClearOpenUid,
   hideLikeCount,
   onToggleHideLikeCount,
+  unlockedBadges,
 }) {
   const [showSearch, setShowSearch] = useState(false);
 
@@ -111,7 +112,7 @@ export default function MainApp({
           />
         )}
 
-        {tab === "streaks" && <Streaks streak={streak} myPosts={myPosts} />}
+        {tab === "streaks" && <Streaks streak={streak} myPosts={myPosts} unlockedBadges={unlockedBadges} />}
 
         {tab === "messages" && (
           <Messages

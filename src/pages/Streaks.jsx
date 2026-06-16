@@ -1,49 +1,56 @@
 import { useEffect, useState } from "react";
 import Page from "../components/Page";
 import { BIBI } from "../data/appData";
-
-const ACHIEVEMENTS = (streak) => [
-  { emoji: "⭐", title: "First Post",      locked: streak < 1,   requirement: "Post your first progress update" },
-  { emoji: "🔥", title: "7-Day",           locked: streak < 7,   requirement: "Reach a 7 day streak" },
-  { emoji: "🏆", title: "Top Learner",     locked: streak < 14,  requirement: "Reach a 14 day streak" },
-  { emoji: "👑", title: "Community Star",  locked: true,         requirement: "Get comments from friends" },
-  { emoji: "📚", title: "Skill Master",    locked: streak < 30,  requirement: "Reach a 30 day streak" },
-  { emoji: "💎", title: "Elite Learner",   locked: streak < 60,  requirement: "Reach a 60 day streak" },
-  { emoji: "🚀", title: "100-Day",         locked: streak < 100, requirement: "Reach a 100 day streak" },
-  { emoji: "💬", title: "Social Butterfly",locked: true,         requirement: "Comment and reply often" },
-  { emoji: "🎥", title: "Video Pro",       locked: true,         requirement: "Upload a video progress post" },
-];
+import { BADGE_DEFS } from "../data/badges";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
-export default function Streaks({ streak, myPosts }) {
-  const today        = new Date().getDay();
+export default function Streaks({ streak, myPosts, unlockedBadges = [] }) {
+  const today         = new Date().getDay();
   const adjustedToday = today === 0 ? 6 : today - 1;
 
-  const achievements   = ACHIEVEMENTS(streak);
-  const unlockedTitles = achievements.filter(a => !a.locked).map(a => a.title);
+  // Each badge is unlocked if Firestore says so OR the real-time condition is met
+  const isUnlocked = (id) => {
+    if (unlockedBadges.includes(id)) return true;
+    // Real-time fallback for streak/post conditions (shows immediately, Firestore catches up async)
+    const progress = (myPosts || []).filter(p => p.postType !== "tutorial");
+    switch (id) {
+      case "First Post":   return progress.length >= 1;
+      case "First Friend": return false; // needs friends data — rely on Firestore
+      case "7-Day":        return streak >= 7;
+      case "Consistent":   return streak >= 3;
+      case "Top Learner":  return streak >= 14;
+      case "Dedicated":    return progress.length >= 7;
+      case "Skill Master": return streak >= 30;
+      case "Elite Learner":return streak >= 60;
+      case "100-Day":      return streak >= 100;
+      case "Video Pro":    return (myPosts || []).some(p => p.mediaType?.startsWith("video") && p.postType !== "tutorial");
+      case "Teacher":      return (myPosts || []).some(p => p.postType === "tutorial" && p.mediaType?.startsWith("video"));
+      case "Popular":      return (myPosts || []).some(p => (p.likedBy?.length ?? 0) >= 10);
+      default:             return false;
+    }
+  };
 
   const [showBibi, setShowBibi] = useState(false);
 
   useEffect(() => {
     const celebrated = JSON.parse(localStorage.getItem("celebratedBadges") || "[]");
-    const newOnes    = unlockedTitles.filter(t => !celebrated.includes(t));
+    const newOnes    = unlockedBadges.filter(id => !celebrated.includes(id));
     if (newOnes.length === 0) return;
 
     setShowBibi(true);
     localStorage.setItem("celebratedBadges", JSON.stringify([...celebrated, ...newOnes]));
     const t = setTimeout(() => setShowBibi(false), 2800);
     return () => clearTimeout(t);
-  }, [streak]); // eslint-disable-line
+  }, [unlockedBadges.join(",")]); // eslint-disable-line
 
-  const postedToday = myPosts?.some(p => {
+  const postedToday = (myPosts || []).some(p => {
     const d = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || 0);
     return d.toDateString() === new Date().toDateString();
   });
 
   return (
     <Page title="Streaks">
-      {/* Bibi celebration toast — only when a new badge was just unlocked */}
       {showBibi && (
         <div className="unlockBibiToast">
           <img src={BIBI.excited} alt="Bibi celebrating" />
@@ -51,12 +58,10 @@ export default function Streaks({ streak, myPosts }) {
         </div>
       )}
 
-      {/* Hero streak card */}
       <div className="streakCard">
         <div className="streakFlame">🔥</div>
         <div className="streakNumber">{streak}</div>
         <div className="streakLabel">day streak</div>
-
         <div className="weekRow">
           {DAYS.map((day, i) => (
             <span key={i} className={i === adjustedToday ? "done" : ""}>{day}</span>
@@ -64,7 +69,6 @@ export default function Streaks({ streak, myPosts }) {
         </div>
       </div>
 
-      {/* Motivation line */}
       <p className="streakMotivation">
         {postedToday
           ? "Great job! Streak secured for today 🔥"
@@ -73,20 +77,19 @@ export default function Streaks({ streak, myPosts }) {
             : "Post today to keep your streak going!"}
       </p>
 
-      {/* Badges */}
       <div className="badgeGrid">
-        {achievements.map(a => (
-          <div
-            key={a.title}
-            className={`badgeCard${a.locked ? " lockedBadge" : " unlockedBadge"}`}
-          >
-            <span>{a.emoji}</span>
-            <h3>{a.title}</h3>
-            {a.locked
-              ? <small>🔒 {a.requirement}</small>
-              : <small>Unlocked 🎉</small>}
-          </div>
-        ))}
+        {BADGE_DEFS.map(badge => {
+          const unlocked = isUnlocked(badge.id);
+          return (
+            <div key={badge.id} className={`badgeCard${unlocked ? " unlockedBadge" : " lockedBadge"}`}>
+              <span>{badge.emoji}</span>
+              <h3>{badge.id}</h3>
+              {unlocked
+                ? <small>Unlocked 🎉</small>
+                : <small>🔒 {badge.requirement}</small>}
+            </div>
+          );
+        })}
       </div>
     </Page>
   );

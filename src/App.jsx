@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 import {
@@ -52,6 +52,7 @@ import Onboarding from "./components/Onboarding";
 import AuthScreen from "./components/AuthScreen";
 import MainApp from "./components/MainApp";
 import IOSInstallPrompt from "./components/IOSInstallPrompt";
+import { checkBadges } from "./utils/checkBadges";
 
 
 export default function App() {
@@ -165,7 +166,8 @@ useEffect(() => {
   return () => document.removeEventListener("visibilitychange", onVisible);
 }, [currentUser]); // eslint-disable-line
 
-const [streak, setStreak] = useState(0);
+const [streak,          setStreak]          = useState(0);
+  const [unlockedBadges,  setUnlockedBadges]  = useState([]);
 
   const [likedPosts,     setLikedPosts]     = useState([]);
   const [hideLikeCount,  setHideLikeCount]  = useState(false);
@@ -216,6 +218,7 @@ const [streak, setStreak] = useState(0);
             setSelectedSkills(userData.selectedSkills || []);
             setSelectedGoal(userData.selectedGoal || "");
             setStreak(userData.streak || 0);
+            setUnlockedBadges(userData.unlockedBadges || []);
             setFriends(userData.friends || []);
             setFriendRequests(userData.friendRequests || []);
             setLikedVideos(userData.likedVideos || []);
@@ -298,6 +301,7 @@ const [streak, setStreak] = useState(0);
     setFriends(data.friends || []);
     setFriendRequests(data.friendRequests || []);
     setStreak(data.streak || 0);
+    setUnlockedBadges(data.unlockedBadges || []);
     setProfilePhotoUrl(data.profilePhotoUrl || "");
     setUsername(data.username || "");
     setSelectedSkills(data.selectedSkills || []);
@@ -306,6 +310,19 @@ const [streak, setStreak] = useState(0);
 
   return () => unsubscribe();
 }, [currentUser]);
+
+  // ── Auto-check badges whenever streak, posts, or friends change ────────────
+  const badgeCheckKey = `${streak}:${posts.length}:${friends.length}`;
+  const lastBadgeKey  = useRef("");
+  useEffect(() => {
+    if (!currentUser || badgeCheckKey === lastBadgeKey.current) return;
+    lastBadgeKey.current = badgeCheckKey;
+    checkBadges({ currentUser, myPosts, friends, streak, unlockedBadges })
+      .then(newOnes => {
+        if (newOnes.length > 0) setUnlockedBadges(prev => [...new Set([...prev, ...newOnes])]);
+      })
+      .catch(() => {});
+  }); // eslint-disable-line
 
   function toggleTheme(themeName) {
     setSelectedThemes((prev) =>
@@ -443,6 +460,13 @@ const [streak, setStreak] = useState(0);
       setUploadPreview(null);
       setCaption("");
       setTab(postType === "tutorial" ? "home" : "profile");
+
+      // Badge check after posting — don't await, runs in background
+      checkBadges({ currentUser, myPosts, friends, streak: updatedStreak, unlockedBadges })
+        .then(newOnes => {
+          if (newOnes.length > 0) setUnlockedBadges(prev => [...new Set([...prev, ...newOnes])]);
+        })
+        .catch(() => {});
     } catch (error) {
       alert(error.message);
     } finally {
@@ -626,7 +650,15 @@ async function handleAcceptFriendRequest(requesterUid) {
     "/?tab=friends"
   );
 
-  setFriends((prev) => [...new Set([...prev, requesterUid])]);
+  setFriends((prev) => {
+    const updated = [...new Set([...prev, requesterUid])];
+    checkBadges({ currentUser, myPosts, friends: updated, streak, unlockedBadges })
+      .then(newOnes => {
+        if (newOnes.length > 0) setUnlockedBadges(p => [...new Set([...p, ...newOnes])]);
+      })
+      .catch(() => {});
+    return updated;
+  });
   setFriendRequests((prev) => prev.filter((id) => id !== requesterUid));
 }
 
@@ -1039,6 +1071,7 @@ async function handleRemoveFriend
           onToggleHideLikeCount={toggleHideLikeCount}
           openMessageUid={openMessageUid}
           onClearOpenUid={() => setOpenMessageUid(null)}
+          unlockedBadges={unlockedBadges}
           />
       )}
 

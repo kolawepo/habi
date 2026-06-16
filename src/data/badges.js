@@ -1,0 +1,16 @@
+export const BADGE_DEFS = [
+  { id: "First Post",       emoji: "⭐", requirement: "Post your first progress update" },
+  { id: "First Friend",     emoji: "🤝", requirement: "Add your first friend" },
+  { id: "7-Day",            emoji: "🔥", requirement: "Reach a 7-day streak" },
+  { id: "Consistent",       emoji: "📅", requirement: "Post 3 days in a row" },
+  { id: "Top Learner",      emoji: "🏆", requirement: "Reach a 14-day streak" },
+  { id: "Dedicated",        emoji: "💪", requirement: "Post 7 progress updates total" },
+  { id: "Popular",          emoji: "❤️", requirement: "Get 10 likes on a post" },
+  { id: "Community Star",   emoji: "👑", requirement: "Receive a comment from a friend" },
+  { id: "Social Butterfly", emoji: "💬", requirement: "Leave 10+ comments or replies" },
+  { id: "Video Pro",        emoji: "🎥", requirement: "Upload a video progress post" },
+  { id: "Teacher",          emoji: "📚", requirement: "Upload a Teach a Skill tutorial video" },
+  { id: "Skill Master",     emoji: "🥇", requirement: "Reach a 30-day streak" },
+  { id: "Elite Learner",    emoji: "💎", requirement: "Reach a 60-day streak" },
+  { id: "100-Day",          emoji: "🚀", requirement: "Reach a 100-day streak" },
+];
