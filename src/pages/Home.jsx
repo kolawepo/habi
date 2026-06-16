@@ -11,6 +11,8 @@ function ytCmd(iframe, fn, args = []) {
   );
 }
 
+const isMobile = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+
 // ── Cache ──────────────────────────────────────────────────────────────────────
 
 const TTL = 24 * 60 * 60 * 1000;
@@ -57,6 +59,12 @@ export default function Home({
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
 
   function ytSrc(videoId) {
+    if (isMobile) {
+      return (
+        `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1` +
+        `&playsinline=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&iv_load_policy=3`
+      );
+    }
     const startMuted = !soundUnlocked.current || mutedRef.current;
     return (
       `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=${startMuted ? 1 : 0}&controls=1&modestbranding=1` +
@@ -188,9 +196,10 @@ export default function Home({
     return () => obsRef.current?.disconnect();
   }, []);
 
-  // ── First gesture → play active video (handles browsers that block unmuted autoplay) ──
+  // ── First gesture → unlock sound for desktop autoplay ────────────────────
 
   useEffect(() => {
+    if (isMobile) return;
     let fired = false;
     function onGesture() {
       if (fired) return;
@@ -203,19 +212,14 @@ export default function Home({
         ytCmd(f, "playVideo");
       }
     }
-    document.addEventListener("touchstart", onGesture, { passive: true });
     document.addEventListener("click", onGesture);
-    return () => {
-      document.removeEventListener("touchstart", onGesture);
-      document.removeEventListener("click", onGesture);
-    };
+    return () => document.removeEventListener("click", onGesture);
   }, []); // eslint-disable-line
 
-  // ── When active index changes, play it if the iframe is already ready ─────
-  // (usually onReady fires after mount and handles it; this covers fast swipes
-  //  where the iframe was pre-mounted from a previous render cycle)
+  // ── Desktop: when active index changes, play if iframe already ready ──────
 
   useEffect(() => {
+    if (isMobile) return;
     const item = feedRef.current[activeIndex];
     if (!item || item._type !== "youtube") return;
     const f = iframeRefs.current[item.videoId];
@@ -248,13 +252,14 @@ export default function Home({
 
       if (d.event === "onReady") {
         readySet.current.add(vid);
-        const active = feedRef.current[activeIdxRef.current];
-        if (active?._type === "youtube" && active.videoId === vid) {
-          // src already encodes the correct mute state; just ensure full volume when unlocked
-          if (soundUnlocked.current && !mutedRef.current) ytCmd(iframeRefs.current[vid], "setVolume", [100]);
-          ytCmd(iframeRefs.current[vid], "playVideo");
-        } else {
-          ytCmd(iframeRefs.current[vid], "pauseVideo");
+        if (!isMobile) {
+          const active = feedRef.current[activeIdxRef.current];
+          if (active?._type === "youtube" && active.videoId === vid) {
+            if (soundUnlocked.current && !mutedRef.current) ytCmd(iframeRefs.current[vid], "setVolume", [100]);
+            ytCmd(iframeRefs.current[vid], "playVideo");
+          } else {
+            ytCmd(iframeRefs.current[vid], "pauseVideo");
+          }
         }
       }
 
