@@ -111,7 +111,7 @@ export default function MainApp({
           />
         )}
 
-        {tab === "streaks" && <Streaks streak={streak} />}
+        {tab === "streaks" && <Streaks streak={streak} myPosts={myPosts} />}
 
         {tab === "messages" && (
           <Messages

@@ -1483,25 +1483,40 @@ textarea::placeholder {
 ========================= */
 
 .streakCard {
-  background: linear-gradient(180deg, #ff9950, #ff5f87);
+  background: linear-gradient(160deg, #ff9950, #ff5f87);
   border-radius: 36px;
-  padding: 32px 24px;
+  padding: 36px 24px 28px;
   color: white;
   text-align: center;
+  box-shadow: 0 8px 32px rgba(255, 95, 135, 0.28);
 }
 
-.streakCard h2 {
-  font-size: 34px;
+.streakFlame {
+  font-size: 42px;
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
-.streakCard h1 {
-  font-size: 74px;
+.streakNumber {
+  font-size: 108px;
+  font-weight: 900;
   line-height: 0.9;
+  letter-spacing: -4px;
 }
 
-.streakCard p {
-  font-size: 20px;
+.streakLabel {
+  font-size: 22px;
   font-weight: 700;
+  margin-top: 6px;
+  opacity: 0.9;
+}
+
+.streakMotivation {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--subtext, #999);
+  margin: 14px 4px 4px;
 }
 
 .weekRow {
@@ -2380,25 +2395,41 @@ textarea::placeholder {
   animation: badgePop 0.5s ease;
 }
 
-.unlockBibiWrap {
+.unlockBibiToast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 14px;
-  animation: badgePop 0.45s ease;
+  pointer-events: none;
+  animation: bibiToastIn 0.4s ease;
 }
 
-.unlockBibiWrap img {
-  width: 120px;
+.unlockBibiToast img {
+  width: 100px;
   height: auto;
   object-fit: contain;
+  drop-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.unlockBibiWrap p {
-  margin-top: -8px;
-  color: #e95443;
+.unlockBibiToast p {
+  margin-top: -6px;
+  background: linear-gradient(90deg, #ff9950, #ff5f87);
+  color: white;
   font-weight: 900;
-  font-size: 16px;
+  font-size: 15px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(255,95,135,0.35);
+}
+
+@keyframes bibiToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-16px) scale(0.9); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)      scale(1); }
 }
 
 @keyframes badgePop {
