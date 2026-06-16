@@ -133,12 +133,9 @@ export default function Messages({ currentUser, username, friends, openConvoWith
       const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       const inputEl = document.querySelector(".dmInputRow");
       if (inputEl) {
-        const safeArea = parseInt(
-          getComputedStyle(document.documentElement).getPropertyValue("--sab") || "0"
-        ) || 0;
         inputEl.style.bottom = keyboardH > 0
           ? `${keyboardH}px`
-          : `calc(60px + env(safe-area-inset-bottom, 0px))`;
+          : "";
       }
     }
     vv.addEventListener("resize", onResize);
