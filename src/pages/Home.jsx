@@ -51,9 +51,12 @@ export default function Home({
   const obsRef           = useRef(null);
   const memCache         = useRef({});
   const feedRef          = useRef([]);
-  const pauseIndRefs     = useRef({});
-  const soundUnlocked = useRef(false);
-  const playingRef    = useRef(false);
+  const tapIndRefs       = useRef({});
+  const tapIndTimers     = useRef({});
+  const soundUnlocked    = useRef(false);
+  const playingRef       = useRef(false);
+  const touchTapRef      = useRef(null);
+  const fromTouchRef     = useRef(false);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -261,14 +264,8 @@ export default function Home({
       }
 
       if (d.event === "onStateChange") {
-        const ind = pauseIndRefs.current[vid];
-        if (d.info === 1) {
-          playingRef.current = true;
-          if (ind) ind.style.display = "none";
-        } else if (d.info === 2) {
-          playingRef.current = false;
-          if (ind) ind.style.display = "flex";
-        }
+        if (d.info === 1)      playingRef.current = true;
+        else if (d.info === 2) playingRef.current = false;
       }
     }
     window.addEventListener("message", onMsg);
@@ -286,6 +283,27 @@ export default function Home({
       nowMuted ? ytCmd(f, "mute") : (ytCmd(f, "unMute"), ytCmd(f, "setVolume", [100]));
     }
     setMuted(nowMuted);
+  }
+
+  // ── Tap to pause / play ───────────────────────────────────────────────────
+
+  function handleTap(videoId) {
+    const f   = iframeRefs.current[videoId];
+    const el  = tapIndRefs.current[videoId];
+    if (playingRef.current) {
+      ytCmd(f, "pauseVideo");
+      if (el) el.textContent = "⏸";
+    } else {
+      ytCmd(f, "playVideo");
+      if (el) el.textContent = "▶";
+    }
+    if (el) {
+      el.style.opacity = "1";
+      clearTimeout(tapIndTimers.current[videoId]);
+      tapIndTimers.current[videoId] = setTimeout(() => {
+        el.style.opacity = "0";
+      }, 700);
+    }
   }
 
   // ── Like / save ────────────────────────────────────────────────────────────
@@ -381,13 +399,34 @@ export default function Home({
                     />
                     <div
                       style={{ position: "absolute", inset: 0, zIndex: 1 }}
-                      onTouchStart={() => {
+                      onTouchStart={(e) => {
                         document.activeElement?.blur();
                         feedEl.current?.focus();
+                        touchTapRef.current = {
+                          x: e.touches[0].clientX,
+                          y: e.touches[0].clientY,
+                          t: Date.now(),
+                        };
+                      }}
+                      onTouchMove={(e) => {
+                        if (!touchTapRef.current) return;
+                        const dx = Math.abs(e.touches[0].clientX - touchTapRef.current.x);
+                        const dy = Math.abs(e.touches[0].clientY - touchTapRef.current.y);
+                        if (dx > 8 || dy > 12) touchTapRef.current = null;
+                      }}
+                      onTouchEnd={() => {
+                        const start = touchTapRef.current;
+                        touchTapRef.current = null;
+                        if (!start) return;
+                        if (Date.now() - start.t < 300) {
+                          fromTouchRef.current = true;
+                          handleTap(item.videoId);
+                          setTimeout(() => { fromTouchRef.current = false; }, 500);
+                        }
                       }}
                       onClick={() => {
-                        const f = iframeRefs.current[item.videoId];
-                        playingRef.current ? ytCmd(f, "pauseVideo") : ytCmd(f, "playVideo");
+                        if (fromTouchRef.current) return;
+                        handleTap(item.videoId);
                       }}
                     />
                     <div className="slideSwipeZone" />
@@ -404,11 +443,9 @@ export default function Home({
               {isYt && !isFailed && isActive && (
                 <div
                   className="pausedPlayIndicator"
-                  ref={el => { if (el) pauseIndRefs.current[item.videoId] = el; else delete pauseIndRefs.current[item.videoId]; }}
-                  style={{ display: "none", pointerEvents: "none" }}
-                >
-                  ⏸
-                </div>
+                  ref={el => { if (el) tapIndRefs.current[item.videoId] = el; else delete tapIndRefs.current[item.videoId]; }}
+                  style={{ opacity: 0 }}
+                />
               )}
 
               <div className="tiktokGradient" />

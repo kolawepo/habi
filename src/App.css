@@ -906,10 +906,11 @@ textarea {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 10;
-  font-size: 48px;
-  color: rgba(200, 200, 200, 0.6);
-  pointer-events: auto;
+  font-size: 52px;
   line-height: 1;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
 }
 
 .ytSeekBar {
