@@ -25,6 +25,18 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400000)}d ago`;
 }
 
+function postDate(ts) {
+  if (!ts) return "";
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  const diff = Date.now() - date.getTime();
+  const days = diff / 86400000;
+  if (days < 1)  return `${Math.floor(diff / 3600000) || 1}h ago`;
+  if (days < 7)  return `${Math.floor(days)} day${Math.floor(days) === 1 ? "" : "s"} ago`;
+  const opts = { month: "long", day: "numeric" };
+  if (date.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+  return date.toLocaleDateString("en-US", opts);
+}
+
 function notifIcon(type) {
   if (type === "friend_request")  return "👋";
   if (type === "friend_accepted") return "🤝";
@@ -407,7 +419,6 @@ export default function Friends({
                       <p className="igPostUsername">
                         {post.firstName || post.name?.split(" ")[0] || post.username}
                       </p>
-                      <p className="igPostSkill">{post.skill}</p>
                     </div>
                   </div>
 
@@ -449,18 +460,19 @@ export default function Friends({
                   </div>
 
                   {/* Footer */}
-                  {((!poster?.hideLikeCount && likeCount > 0) || post.caption) && (
-                    <div className="igPostFooter">
-                      {!poster?.hideLikeCount && likeCount > 0 && (
-                        <p className="igLikeCount">{likeCount} {likeCount === 1 ? "like" : "likes"}</p>
-                      )}
-                      {post.caption && (
-                        <p className="igCaption">
-                          <span className="igCaptionUser">@{post.username}</span>{" "}{post.caption}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  <div className="igPostFooter">
+                    {!poster?.hideLikeCount && likeCount > 0 && (
+                      <p className="igLikeCount">{likeCount} {likeCount === 1 ? "like" : "likes"}</p>
+                    )}
+                    {post.caption && (
+                      <p className="igCaption">
+                        <span className="igCaptionUser">@{post.username}</span>{" "}{post.caption}
+                      </p>
+                    )}
+                    {post.createdAt && (
+                      <p className="igPostDate">{postDate(post.createdAt)}</p>
+                    )}
+                  </div>
 
                   {/* Inline comments */}
                   {expanded && (

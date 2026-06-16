@@ -5035,6 +5035,12 @@ textarea::placeholder {
   font-weight: 800;
 }
 
+.igPostDate {
+  font-size: 11.5px;
+  color: var(--subtext, #aaa);
+  margin: 2px 0 0;
+}
+
 /* dark mode */
 [data-theme="dark"] .friendsTopBar    { background: var(--bg); }
 [data-theme="dark"] .friendsTitle     { color: var(--text); }
