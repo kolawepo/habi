@@ -434,19 +434,24 @@ const [streak,              setStreak]              = useState(0);
         }
       }
 
-      const today = new Date().toDateString();
-      const userRef = doc(db, "users", currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      const userData = userSnap.data();
+      const now       = new Date();
+      const today     = now.toDateString();
+      const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toDateString();
+      const userRef   = doc(db, "users", currentUser.uid);
+      const userSnap  = await getDoc(userRef);
+      const userData  = userSnap.data();
       const lastPostDate = userData?.lastPostDate;
-      let updatedStreak = userData?.streak || 0;
+      let updatedStreak  = userData?.streak || 0;
 
-      if (lastPostDate !== today) {
-        updatedStreak += 1;
-        await updateDoc(userRef, {
-          streak: updatedStreak,
-          lastPostDate: today,
-        });
+      if (lastPostDate === today) {
+        // Already posted today — streak unchanged
+      } else {
+        if (lastPostDate === yesterday) {
+          updatedStreak += 1;   // consecutive day → extend
+        } else {
+          updatedStreak = 1;    // gap > 1 day (or first post) → reset
+        }
+        await updateDoc(userRef, { streak: updatedStreak, lastPostDate: today });
         setStreak(updatedStreak);
 
         const MILESTONES = [7, 14, 30, 100];
