@@ -35,14 +35,15 @@ function saveCache(skill, videos) {
 export default function Home({
   firstName, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
-  friends, onShareToFriend, addMoreSkills,
+  friends, onShareToFriend, addMoreSkills, removeSkill,
 }) {
-  const [activeSkill, setActiveSkill] = useState(skills[0] || "");
-  const [ytBySkill,   setYtBySkill]   = useState({});
-  const [loading,     setLoading]     = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [failed,      setFailed]      = useState(new Set());
-  const [shareTarget, setShareTarget] = useState(null);
+  const [activeSkill,     setActiveSkill]     = useState(skills[0] || "");
+  const [ytBySkill,       setYtBySkill]       = useState({});
+  const [loading,         setLoading]         = useState(false);
+  const [activeIndex,     setActiveIndex]     = useState(0);
+  const [failed,          setFailed]          = useState(new Set());
+  const [shareTarget,     setShareTarget]     = useState(null);
+  const [showSkillsSheet, setShowSkillsSheet] = useState(false);
 
   const [muted, setMuted] = useState(false);
 
@@ -325,9 +326,7 @@ export default function Home({
               </button>
             ))}
           </div>
-          {addMoreSkills && (
-            <button className="editSkillsBtn" onClick={addMoreSkills}>+ Skills</button>
-          )}
+          <button className="editSkillsBtn" onClick={() => setShowSkillsSheet(true)}>+ Skills</button>
         </div>
       </div>
 
@@ -456,6 +455,38 @@ export default function Home({
           onSend={uid => onShareToFriend(uid, shareTarget)}
           onClose={() => setShareTarget(null)}
         />
+      )}
+
+      {showSkillsSheet && (
+        <div className="skillsSheetOverlay" onClick={() => setShowSkillsSheet(false)}>
+          <div className="skillsSheet" onClick={e => e.stopPropagation()}>
+            <div className="skillsSheetHandle" />
+            <h3 className="skillsSheetTitle">My Skills</h3>
+            <div className="skillsSheetList">
+              {skills.map(skill => (
+                <div key={skill} className="skillsSheetRow">
+                  <span className="skillsSheetName">{skillEmoji(skill)} {skill}</span>
+                  <button
+                    className="skillsSheetRemove"
+                    aria-label={`Remove ${skill}`}
+                    onClick={() => {
+                      removeSkill(skill);
+                      if (activeSkill === skill) setActiveSkill(skills.find(s => s !== skill) || "");
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              className="skillsSheetAdd"
+              onClick={() => { setShowSkillsSheet(false); addMoreSkills?.(); }}
+            >
+              + Add New Skill
+            </button>
+          </div>
+        </div>
       )}
     </>
   );

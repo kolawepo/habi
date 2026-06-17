@@ -842,6 +842,95 @@ textarea {
 }
 
 /* =========================
+   SKILLS MANAGEMENT SHEET
+========================= */
+
+.skillsSheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.skillsSheet {
+  width: 100%;
+  max-width: 520px;
+  background: var(--card-bg, white);
+  border-radius: 28px 28px 0 0;
+  padding: 12px 20px 40px;
+  animation: sheetUp 0.26s ease;
+}
+
+.skillsSheetHandle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border, #ddd);
+  margin: 0 auto 16px;
+}
+
+.skillsSheetTitle {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text, #1f1f1f);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.skillsSheetList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.skillsSheetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--surface, #f6f1ee);
+  border-radius: 14px;
+}
+
+.skillsSheetName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #1f1f1f);
+}
+
+.skillsSheetRemove {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: var(--subtext, #999);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  line-height: 1;
+  transition: color 0.12s, background 0.12s;
+}
+.skillsSheetRemove:active {
+  color: #e95443;
+  background: rgba(233, 84, 67, 0.1);
+}
+
+.skillsSheetAdd {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff9950, #ff5f87);
+  color: white;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* =========================
    TIKTOK FEED
 ========================= */
 
