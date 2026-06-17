@@ -5223,37 +5223,50 @@ textarea::placeholder {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 0 100px;
+  padding: 6px 16px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .dmConvoRow {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 13px;
   width: 100%;
-  padding: 12px 20px;
-  background: none;
+  padding: 10px 14px;
+  background: var(--card-bg, white);
   border: none;
-  border-bottom: 1px solid var(--border, #e8e0db);
+  border-radius: 18px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 0.12s;
 }
 .dmConvoRow:active { background: var(--surface, #ede8e4); }
 
+/* Gradient ring wrapper */
+.dmConvoAvatarRing {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9950, #ff5f87);
+  padding: 2.5px;
+  flex-shrink: 0;
+  display: flex;
+}
+
 .dmConvoAvatar {
-  width: 52px;
-  height: 52px;
+  flex: 1;
   border-radius: 50%;
   background: linear-gradient(135deg, #ff9950, #ff5f87);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 900;
   color: white;
   overflow: hidden;
-  flex-shrink: 0;
+  border: 2px solid var(--bg, #f6f1ee);
 }
 .dmConvoAvatar img {
   width: 100%;
@@ -5270,31 +5283,40 @@ textarea::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .dmConvoName {
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text, #1f1f1f);
   margin: 0;
 }
 
 .dmConvoTime {
   font-size: 12px;
-  color: var(--text-muted, #999);
+  color: var(--text-muted, #aaa);
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .dmConvoLast {
   font-size: 14px;
-  color: var(--text-muted, #999);
+  color: var(--subtext, #666);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0;
+}
+
+/* Unread state — bold name + preview */
+.dmConvoRow.unread .dmConvoName {
+  font-weight: 900;
+}
+.dmConvoRow.unread .dmConvoLast {
+  font-weight: 700;
+  color: var(--text, #1f1f1f);
 }
 
 /* ── Thread view — fixed overlay so keyboard detection via visualViewport works ── */
@@ -5693,9 +5715,12 @@ textarea::placeholder {
 [data-theme="dark"] .dmListPage         { background: var(--bg); }
 [data-theme="dark"] .dmListTitle        { color: var(--text); }
 [data-theme="dark"] .dmListEmpty p      { color: var(--text); }
-[data-theme="dark"] .dmConvoRow         { border-color: var(--border); }
+[data-theme="dark"] .dmConvoRow         { background: var(--card-bg); }
 [data-theme="dark"] .dmConvoRow:active  { background: var(--surface); }
+[data-theme="dark"] .dmConvoAvatar      { border-color: var(--card-bg); }
 [data-theme="dark"] .dmConvoName        { color: var(--text); }
+[data-theme="dark"] .dmConvoLast        { color: var(--subtext, #888); }
+[data-theme="dark"] .dmConvoRow.unread .dmConvoLast { color: var(--text); }
 [data-theme="dark"] .dmThreadPage       { background: var(--bg); }
 [data-theme="dark"] .dmThreadHeader     { border-color: var(--border); }
 [data-theme="dark"] .dmThreadName       { color: var(--text); }

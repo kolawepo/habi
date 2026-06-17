@@ -141,6 +141,14 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     }
   }, [messages]);
 
+  // ── Mark conversation read when thread is opened ─────────────────────────
+  useEffect(() => {
+    if (!selectedConvo || !currentUser) return;
+    updateDoc(doc(db, "dms", selectedConvo.id), {
+      unreadBy: arrayRemove(currentUser.uid),
+    }).catch(() => {});
+  }, [selectedConvo?.id]); // eslint-disable-line
+
   // ── iOS keyboard: shift fixed input bar up when keyboard appears ──────────
   useEffect(() => {
     if (!selectedConvo) return;
@@ -183,9 +191,15 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     const trimmed = text.trim();
     setText("");
     const convoRef = doc(db, "dms", selectedConvo.id);
+    const otherUid = selectedConvo.participants.find((uid) => uid !== currentUser.uid);
     await setDoc(
       convoRef,
-      { participants: selectedConvo.participants, lastMessage: trimmed, lastMessageAt: serverTimestamp() },
+      {
+        participants: selectedConvo.participants,
+        lastMessage: trimmed,
+        lastMessageAt: serverTimestamp(),
+        ...(otherUid ? { unreadBy: arrayUnion(otherUid) } : {}),
+      },
       { merge: true }
     );
     await addDoc(collection(db, "dms", selectedConvo.id, "messages"), {
@@ -194,7 +208,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
       text: trimmed,
       createdAt: serverTimestamp(),
     });
-    const otherUid = selectedConvo.participants.find((uid) => uid !== currentUser.uid);
     if (otherUid) {
       sendPushNotification(
         otherUid,
@@ -374,12 +387,19 @@ export default function Messages({ currentUser, username, friends, openConvoWith
           {conversations.map((convo) => {
             const otherUid = convo.participants.find((uid) => uid !== currentUser?.uid);
             const other    = profiles[otherUid] || friendProfiles.find(f => f.uid === otherUid) || {};
+            const unread   = convo.unreadBy?.includes(currentUser?.uid);
             return (
-              <button key={convo.id} className="dmConvoRow" onClick={() => setSelectedConvo(convo)}>
-                <div className="dmConvoAvatar">
-                  {other.profilePhotoUrl
-                    ? <img src={other.profilePhotoUrl} alt="" />
-                    : <span>{(other.username || "?").charAt(0).toUpperCase()}</span>}
+              <button
+                key={convo.id}
+                className={`dmConvoRow${unread ? " unread" : ""}`}
+                onClick={() => setSelectedConvo(convo)}
+              >
+                <div className="dmConvoAvatarRing">
+                  <div className="dmConvoAvatar">
+                    {other.profilePhotoUrl
+                      ? <img src={other.profilePhotoUrl} alt="" />
+                      : <span>{(other.username || "?").charAt(0).toUpperCase()}</span>}
+                  </div>
                 </div>
                 <div className="dmConvoInfo">
                   <div className="dmConvoTop">
