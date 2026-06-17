@@ -1574,37 +1574,92 @@ textarea::placeholder {
   margin-bottom: 150px;
 }
 
+/* Badge card — perspective container */
 .badgeCard {
-  background: white;
   border-radius: 24px;
-  padding: 18px 8px;
-  text-align: center;
-  min-height: 125px;
+  height: 130px;
   position: relative;
+  perspective: 700px;
+}
+
+/* Inner rotating element */
+.badgeCardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.42s ease;
+  border-radius: 24px;
+}
+
+.badgeCard.flipped .badgeCardInner {
+  transform: rotateY(180deg);
+}
+
+/* Both faces */
+.badgeFront,
+.badgeBack {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 12px 8px;
+  text-align: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-.badgeCard span {
+.badgeFront {
+  background: var(--card-bg, white);
+}
+
+.badgeFront span {
   display: block;
   font-size: 30px;
   margin-bottom: 8px;
 }
 
-.badgeCard h3 {
+.badgeFront h3 {
   font-size: 13px;
   font-weight: 900;
-  color: #1f1f1f;
+  color: var(--text, #1f1f1f);
   line-height: 1.15;
 }
 
-.badgeCard small {
+.badgeFront small {
   font-size: 11px;
   color: #999;
   margin-top: 5px;
   font-weight: 800;
+}
+
+/* Back face */
+.badgeBack {
+  transform: rotateY(180deg);
+  background: linear-gradient(145deg, #ff9950, #ff5f87);
+  color: white;
+  padding: 10px 10px;
+}
+
+.badgeBack .badgeBackEmoji {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.badgeBackReq {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 5px;
+}
+
+.badgeBackDate {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.85;
 }
 
 .lockedBadge {
@@ -1612,80 +1667,12 @@ textarea::placeholder {
   filter: grayscale(0.35);
 }
 
-.lockedBadge::after {
+.lockedBadge .badgeFront::after {
   content: "🔒";
   position: absolute;
-  top: 9px;
-  right: 9px;
-  font-size: 14px;
-}
-
-/* =========================
-   BADGE DETAIL SHEET
-========================= */
-
-.badgeDetailOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 600;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.badgeDetailSheet {
-  background: var(--card-bg, #fff);
-  border-radius: 28px 28px 0 0;
-  padding: 32px 28px 48px;
-  width: 100%;
-  max-width: 480px;
-  text-align: center;
-  position: relative;
-  animation: sheetUp 0.28s ease;
-}
-
-@keyframes sheetUp {
-  from { transform: translateY(60px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-
-.badgeDetailClose {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  background: none;
-  border: none;
-  font-size: 18px;
-  color: var(--subtext, #aaa);
-  cursor: pointer;
-  padding: 4px 8px;
-}
-
-.badgeDetailEmoji {
-  font-size: 64px;
-  line-height: 1;
-  margin-bottom: 12px;
-}
-
-.badgeDetailName {
-  font-size: 22px;
-  font-weight: 900;
-  color: var(--text, #1f1f1f);
-  margin-bottom: 8px;
-}
-
-.badgeDetailReq {
-  font-size: 15px;
-  color: var(--subtext, #888);
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.badgeDetailDate {
+  top: 8px;
+  right: 8px;
   font-size: 13px;
-  color: var(--subtext, #aaa);
-  font-weight: 700;
 }
 
 .unlockedBadge {

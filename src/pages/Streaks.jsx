@@ -5,8 +5,7 @@ const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function formatUnlockDate(ts) {
   if (!ts) return null;
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return new Date(ts).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export default function Streaks({ streak, myPosts, unlockedBadges = [], newlyUnlockedBadges = [] }) {
@@ -34,18 +33,14 @@ export default function Streaks({ streak, myPosts, unlockedBadges = [], newlyUnl
   };
 
   const [showNewBadge, setShowNewBadge] = useState(false);
-  const [selectedBadge, setSelectedBadge] = useState(null);
+  const [flippedBadge, setFlippedBadge] = useState(null);
   const bannerTimer = useRef(null);
 
-  // Only show the in-card banner when a badge was JUST unlocked (from checkBadges result)
   useEffect(() => {
     if (!newlyUnlockedBadges.length) return;
 
-    // Store unlock dates in localStorage
     const unlockDates = JSON.parse(localStorage.getItem("badgeUnlockDates") || "{}");
-    newlyUnlockedBadges.forEach(id => {
-      if (!unlockDates[id]) unlockDates[id] = Date.now();
-    });
+    newlyUnlockedBadges.forEach(id => { if (!unlockDates[id]) unlockDates[id] = Date.now(); });
     localStorage.setItem("badgeUnlockDates", JSON.stringify(unlockDates));
 
     setShowNewBadge(true);
@@ -61,9 +56,13 @@ export default function Streaks({ streak, myPosts, unlockedBadges = [], newlyUnl
 
   const unlockDates = JSON.parse(localStorage.getItem("badgeUnlockDates") || "{}");
 
+  function toggleFlip(badgeId) {
+    setFlippedBadge(prev => (prev === badgeId ? null : badgeId));
+  }
+
   return (
-    <div className="streaksPage">
-      <div className="streakCard">
+    <div className="streaksPage" onClick={() => setFlippedBadge(null)}>
+      <div className="streakCard" onClick={e => e.stopPropagation()}>
         <div className="streakFlame">🔥</div>
         <div className="streakNumber">{streak}</div>
         <div className="streakLabel">day streak</div>
@@ -88,35 +87,33 @@ export default function Streaks({ streak, myPosts, unlockedBadges = [], newlyUnl
       <div className="badgeGrid">
         {BADGE_DEFS.map(badge => {
           const unlocked = isUnlocked(badge.id);
+          const flipped  = flippedBadge === badge.id;
           return (
             <div
               key={badge.id}
-              className={`badgeCard${unlocked ? " unlockedBadge" : " lockedBadge"}`}
-              onClick={() => unlocked && setSelectedBadge(badge)}
+              className={`badgeCard${unlocked ? " unlockedBadge" : " lockedBadge"}${flipped ? " flipped" : ""}`}
+              onClick={e => { e.stopPropagation(); if (unlocked) toggleFlip(badge.id); }}
             >
-              <span>{badge.emoji}</span>
-              <h3>{badge.id}</h3>
-              {unlocked
-                ? <small>Unlocked 🎉</small>
-                : <small>🔒 {badge.requirement}</small>}
+              <div className="badgeCardInner">
+                <div className="badgeFront">
+                  <span>{badge.emoji}</span>
+                  <h3>{badge.id}</h3>
+                  {unlocked
+                    ? <small>Unlocked 🎉</small>
+                    : <small>🔒 {badge.requirement}</small>}
+                </div>
+                <div className="badgeBack">
+                  <span className="badgeBackEmoji">{badge.emoji}</span>
+                  <p className="badgeBackReq">{badge.requirement}</p>
+                  {unlockDates[badge.id] && (
+                    <p className="badgeBackDate">{formatUnlockDate(unlockDates[badge.id])}</p>
+                  )}
+                </div>
+              </div>
             </div>
           );
         })}
       </div>
-
-      {selectedBadge && (
-        <div className="badgeDetailOverlay" onClick={() => setSelectedBadge(null)}>
-          <div className="badgeDetailSheet" onClick={e => e.stopPropagation()}>
-            <button className="badgeDetailClose" onClick={() => setSelectedBadge(null)}>✕</button>
-            <div className="badgeDetailEmoji">{selectedBadge.emoji}</div>
-            <h2 className="badgeDetailName">{selectedBadge.id}</h2>
-            <p className="badgeDetailReq">{selectedBadge.requirement}</p>
-            {unlockDates[selectedBadge.id] && (
-              <p className="badgeDetailDate">Unlocked {formatUnlockDate(unlockDates[selectedBadge.id])}</p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
