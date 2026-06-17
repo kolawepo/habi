@@ -13,6 +13,7 @@ import {
   onSnapshot,
   serverTimestamp,
   arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 
 import {
@@ -69,8 +70,6 @@ export default function Profile({
 
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
-
-  const [hideBottomPanel, setHideBottomPanel] = useState(false);
 
   const [showComments, setShowComments] = useState(false);
 
@@ -153,6 +152,24 @@ const [changingUsername, setChangingUsername] = useState(false);
         return comment;
       }),
     }));
+  }
+
+  // Close modal when the post is deleted (myPosts snapshot fires without it)
+  useEffect(() => {
+    if (!selectedUpload) return;
+    if (!myPosts.find(p => p.id === selectedUpload.id)) {
+      setSelectedUpload(null);
+      setShowComments(false);
+    }
+  }, [myPosts]); // eslint-disable-line
+
+  async function toggleLike(post) {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    const isLiked = (post.likedBy || []).includes(uid);
+    await updateDoc(doc(db, "posts", post.id), {
+      likedBy: isLiked ? arrayRemove(uid) : arrayUnion(uid),
+    });
   }
 
   async function handleProfilePhoto(e) {
@@ -458,144 +475,63 @@ async function changeUsername() {
     </div>
   </div>
 )}
-      {selectedUpload && (
+      {selectedUpload && (() => {
+        const uid = auth.currentUser?.uid;
+        const currentPost = myPosts.find(p => p.id === selectedUpload.id) || selectedUpload;
+        const isLiked = (currentPost.likedBy || []).includes(uid);
+        return (
         <div className="uploadModal">
-
-          <div
-            className={
-              hideBottomPanel
-                ? "socialViewer socialViewerExpanded"
-                : "socialViewer"
-            }
-          >
+          <div className="socialViewer">
 
             <div className="socialHeader">
-
               <button
                 className="backViewerButton"
-                onClick={() => {
-                  setSelectedUpload(null);
-                  setHideBottomPanel(false);
-                  setShowComments(false);
-                }}
+                onClick={() => { setSelectedUpload(null); setShowComments(false); }}
               >
                 ←
               </button>
-
               <div className="socialHeaderUser">
                 <div className="friendAvatar">
-                  {selectedUpload.username
-                    ? selectedUpload.username
-                        .charAt(0)
-                        .toUpperCase()
-                    : "H"}
+                  {selectedUpload.username ? selectedUpload.username.charAt(0).toUpperCase() : "H"}
                 </div>
-
                 <div>
                   <h3>{selectedUpload.name}</h3>
-
-                  <p>
-                    @{selectedUpload.username}
-                  </p>
+                  <p>@{selectedUpload.username}</p>
                 </div>
               </div>
             </div>
 
-            <div
-              className={
-                hideBottomPanel
-                  ? "socialMediaWrapper expandedMedia"
-                  : "socialMediaWrapper"
-              }
-            >
-              {selectedUpload.mediaType?.startsWith(
-                "video"
-              ) ? (
-                <video
-                  src={selectedUpload.mediaUrl}
-                  controls
-                  autoPlay
-                  className="socialFullscreenMedia"
-                />
+            <div className="socialMediaWrapper">
+              {selectedUpload.mediaType?.startsWith("video") ? (
+                <video src={selectedUpload.mediaUrl} controls autoPlay className="socialFullscreenMedia" />
               ) : (
-                <img
-                  src={selectedUpload.mediaUrl}
-                  alt="post"
-                  className="socialFullscreenMedia"
-                />
+                <img src={selectedUpload.mediaUrl} alt="post" className="socialFullscreenMedia" />
               )}
             </div>
 
-{hideBottomPanel && (
-  <button
-    className="showPanelButton"
-    onClick={() => setHideBottomPanel(false)}
-  >
-    ↑
-  </button>
-)}
-
-            <div
-              className={
-                hideBottomPanel
-                  ? "socialBottomPanel hiddenBottomPanel"
-                  : "socialBottomPanel"
-              }
-            >
-
+            <div className="socialBottomPanel">
               <div className="socialActionsRow">
-
                 <div className="leftSocialActions">
-
                   <button
-                    className={
-                      false
-                        ? "socialAction activeSocialAction"
-                        : "socialAction"
-                    }
-                  
+                    className={isLiked ? "socialAction activeSocialAction" : "socialAction"}
+                    onClick={() => toggleLike(selectedUpload)}
                   >
-                    ❤️
+                    {isLiked ? "❤️" : "🤍"}
                   </button>
-
                   <button
-                    className={
-                      showComments
-                        ? "socialAction activeSocialAction"
-                        : "socialAction"
-                    }
-                    onClick={() =>
-                      setShowComments(!showComments)
-                    }
+                    className={showComments ? "socialAction activeSocialAction" : "socialAction"}
+                    onClick={() => setShowComments(!showComments)}
                   >
                     💬
                   </button>
                 </div>
-
                 <div className="rightSocialActions">
-
-                  <button
-                    className={
-                      false
-                        ? "socialAction activeSocialAction"
-                        : "socialAction"
-                    }
-                    
-                  >
-                    🔖
-                  </button>
-
                   <button
                     className="socialAction"
-                    onClick={() =>
-                      setHideBottomPanel(
-                        !hideBottomPanel
-                      )
-                    }
+                    onClick={() => handleDeletePost(selectedUpload)}
                   >
-                    {hideBottomPanel ? "⌄" : "✕"}
+                    ✕
                   </button>
-
                 </div>
               </div>
 
@@ -740,23 +676,11 @@ async function changeUsername() {
                 </>
               )}
 
-              <button
-                className="deleteUploadButton"
-                onClick={() => {
-                  handleDeletePost(
-                    selectedUpload
-                  );
-
-                  setSelectedUpload(null);
-                }}
-              >
-                Delete Upload
-              </button>
-
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
