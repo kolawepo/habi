@@ -14,6 +14,7 @@ import {
   deleteDoc,
   updateDoc,
   arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { sendPushNotification } from "../utils/notify";
