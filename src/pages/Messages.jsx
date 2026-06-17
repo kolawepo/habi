@@ -29,14 +29,17 @@ function timeAgo(ts) {
 }
 
 export default function Messages({ currentUser, username, friends, openConvoWithUid, onClearOpenUid }) {
-  const [conversations,  setConversations]  = useState([]);
-  const [selectedConvo,  setSelectedConvo]  = useState(null);
-  const [messages,       setMessages]       = useState([]);
-  const [text,           setText]           = useState("");
-  const [profiles,       setProfiles]       = useState({});
-  const [friendProfiles, setFriendProfiles] = useState([]);
-  const [showCompose,    setShowCompose]    = useState(false);
-  const [deletingMsgId,  setDeletingMsgId]  = useState(null);
+  const [conversations,       setConversations]       = useState([]);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
+  const [selectedConvo,       setSelectedConvo]       = useState(null);
+  const [messages,            setMessages]            = useState([]);
+  const [text,                setText]                = useState("");
+  // profiles: uid → user data, for conversation participants
+  const [profiles,            setProfiles]            = useState({});
+  // friendProfiles: loaded independently from the friends list
+  const [friendProfiles,      setFriendProfiles]      = useState([]);
+  const [showCompose,         setShowCompose]         = useState(false);
+  const [deletingMsgId,       setDeletingMsgId]       = useState(null);
 
   const threadRef      = useRef(null);
   const threadPageRef  = useRef(null);
@@ -56,52 +59,66 @@ export default function Messages({ currentUser, username, friends, openConvoWith
         const convos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         convos.sort((a, b) => (b.lastMessageAt?.seconds ?? 0) - (a.lastMessageAt?.seconds ?? 0));
         setConversations(convos);
+        setConversationsLoaded(true);
       },
-      (err) => console.error("[Messages] dms query failed:", err.code, err.message)
+      (err) => {
+        console.error("[Messages] dms snapshot failed:", err.code, err.message);
+        setConversationsLoaded(true); // still mark loaded so UI isn't stuck
+      }
     );
   }, [currentUser]);
 
   // ── Load profiles for conversation participants ───────────────────────────
+  // No dependency on `profiles` to avoid a re-run loop.
   useEffect(() => {
-    async function load() {
-      const uids = [
-        ...new Set(
-          conversations.flatMap((c) =>
-            c.participants.filter((uid) => uid !== currentUser?.uid)
-          )
-        ),
-      ];
-      const missing = uids.filter((uid) => !profiles[uid]);
-      if (!missing.length) return;
-      const result = {};
-      await Promise.all(
+    if (!conversations.length || !currentUser) return;
+    const uids = [
+      ...new Set(
+        conversations.flatMap((c) =>
+          c.participants.filter((uid) => uid !== currentUser.uid)
+        )
+      ),
+    ];
+    setProfiles((prev) => {
+      const missing = uids.filter((uid) => !prev[uid]);
+      if (!missing.length) return prev;
+      // Fetch missing profiles and merge in — done outside the setter
+      Promise.all(
         missing.map(async (uid) => {
           const snap = await getDoc(doc(db, "users", uid));
-          if (snap.exists()) result[uid] = snap.data();
+          return snap.exists() ? [uid, snap.data()] : null;
         })
-      );
-      if (Object.keys(result).length > 0) setProfiles((prev) => ({ ...prev, ...result }));
-    }
-    if (conversations.length > 0 && currentUser) load();
-  }, [conversations, currentUser]);
+      ).then((entries) => {
+        const result = Object.fromEntries(entries.filter(Boolean));
+        if (Object.keys(result).length > 0)
+          setProfiles((p) => ({ ...p, ...result }));
+      });
+      return prev; // return unchanged for this render; update fires async
+    });
+  }, [conversations, currentUser]); // eslint-disable-line
 
-  // ── Load friend profiles for compose picker ───────────────────────────────
+  // ── Load friend profiles independently for the compose sheet ─────────────
+  // Re-runs only when the friends list itself changes, not on every profile fetch.
   useEffect(() => {
-    if (!friends?.length) { setFriendProfiles([]); return; }
+    if (!friends?.length || !currentUser) {
+      setFriendProfiles([]);
+      return;
+    }
+    let cancelled = false;
     async function load() {
-      const result = {};
-      await Promise.all(
+      const results = await Promise.all(
         friends.map(async (uid) => {
-          const cached = profiles[uid];
-          if (cached) { result[uid] = cached; return; }
-          const snap = await getDoc(doc(db, "users", uid));
-          if (snap.exists()) result[uid] = snap.data();
+          try {
+            const snap = await getDoc(doc(db, "users", uid));
+            return snap.exists() ? { uid, ...snap.data() } : null;
+          } catch { return null; }
         })
       );
-      setFriendProfiles(Object.entries(result).map(([uid, data]) => ({ uid, ...data })));
+      if (!cancelled) setFriendProfiles(results.filter(Boolean));
     }
     load();
-  }, [friends, profiles]);
+    return () => { cancelled = true; };
+  }, [friends, currentUser]); // eslint-disable-line
 
   // ── Active thread messages ────────────────────────────────────────────────
   useEffect(() => {
@@ -113,18 +130,18 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     return onSnapshot(
       q,
       (snap) => setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      (err) => console.error("[Messages] thread query failed:", err.code, err.message)
+      (err) => console.error("[Messages] thread snapshot failed:", err.code, err.message)
     );
   }, [selectedConvo]);
 
-  // Auto-scroll thread to bottom
+  // Auto-scroll to bottom
   useEffect(() => {
     if (threadRef.current) {
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // ── iOS keyboard: shift the fixed input bar up when keyboard appears ────────
+  // ── iOS keyboard: shift fixed input bar up when keyboard appears ──────────
   useEffect(() => {
     if (!selectedConvo) return;
     const vv = window.visualViewport;
@@ -132,11 +149,7 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     function onResize() {
       const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       const inputEl = document.querySelector(".dmInputRow");
-      if (inputEl) {
-        inputEl.style.bottom = keyboardH > 0
-          ? `${keyboardH}px`
-          : "";
-      }
+      if (inputEl) inputEl.style.bottom = keyboardH > 0 ? `${keyboardH}px` : "";
     }
     vv.addEventListener("resize", onResize);
     return () => {
@@ -146,13 +159,22 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     };
   }, [selectedConvo]);
 
-  // ── Deep-link: open conversation when notified ───────────────────────────
+  // ── Deep-link: open conversation from notification ────────────────────────
   useEffect(() => {
     if (!openConvoWithUid || !currentUser || selectedConvo) return;
     openConvoWith(openConvoWithUid);
     onClearOpenUid?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openConvoWithUid, currentUser]);
+
+  // ── Open or create a conversation ────────────────────────────────────────
+  function openConvoWith(friendUid) {
+    setShowCompose(false);
+    const participants = [currentUser.uid, friendUid].sort();
+    const convoId      = participants.join("_");
+    const existing     = conversations.find((c) => c.id === convoId);
+    setSelectedConvo(existing ?? { id: convoId, participants, lastMessage: "", lastMessageAt: null });
+  }
 
   // ── Send a text message ───────────────────────────────────────────────────
   async function sendText() {
@@ -184,13 +206,13 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     sendingRef.current = false;
   }
 
-  // ── Delete message for everyone (own messages) ────────────────────────────
+  // ── Delete message for everyone ───────────────────────────────────────────
   async function deleteMsgForAll(msgId) {
     setDeletingMsgId(null);
     await deleteDoc(doc(db, "dms", selectedConvo.id, "messages", msgId));
   }
 
-  // ── Remove message just for me (received messages) ────────────────────────
+  // ── Remove message just for me ────────────────────────────────────────────
   async function deleteMsgForMe(msgId) {
     setDeletingMsgId(null);
     await updateDoc(doc(db, "dms", selectedConvo.id, "messages", msgId), {
@@ -206,24 +228,11 @@ export default function Messages({ currentUser, username, friends, openConvoWith
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   }
 
-  // ── Open or create a conversation ─────────────────────────────────────────
-  function openConvoWith(friendUid) {
-    setShowCompose(false);
-    const participants = [currentUser.uid, friendUid].sort();
-    const convoId = participants.join("_");
-    const existing = conversations.find((c) => c.id === convoId);
-    if (existing) {
-      setSelectedConvo(existing);
-    } else {
-      setSelectedConvo({ id: convoId, participants, lastMessage: "", lastMessageAt: null });
-    }
-  }
-
   // ── Thread view ───────────────────────────────────────────────────────────
   if (selectedConvo) {
     const otherUid = selectedConvo.participants.find((uid) => uid !== currentUser?.uid);
-    const other = profiles[otherUid] || friendProfiles.find((f) => f.uid === otherUid) || {};
-    const visible = messages.filter(m => !m.hiddenFor?.includes(currentUser?.uid));
+    const other    = profiles[otherUid] || friendProfiles.find((f) => f.uid === otherUid) || {};
+    const visible  = messages.filter(m => !m.hiddenFor?.includes(currentUser?.uid));
 
     return (
       <div className="dmThreadPage" ref={threadPageRef}>
@@ -247,23 +256,19 @@ export default function Messages({ currentUser, username, friends, openConvoWith
           </div>
         </div>
 
-        <div
-          className="dmThread"
-          ref={threadRef}
-          onClick={() => setDeletingMsgId(null)}
-        >
+        <div className="dmThread" ref={threadRef} onClick={() => setDeletingMsgId(null)}>
           {visible.length === 0 && <div className="dmEmptyThread">Say hi! 👋</div>}
 
           {visible.map((msg) => {
-            const isMe      = msg.senderId === currentUser?.uid;
+            const isMe       = msg.senderId === currentUser?.uid;
             const isDeleting = deletingMsgId === msg.id;
 
             const longPressProps = {
-              onTouchStart:   () => startLongPress(msg.id),
-              onTouchEnd:     cancelLongPress,
-              onTouchMove:    cancelLongPress,
-              onContextMenu:  (e) => { e.preventDefault(); setDeletingMsgId(msg.id); },
-              onClick:        (e) => e.stopPropagation(),
+              onTouchStart:  () => startLongPress(msg.id),
+              onTouchEnd:    cancelLongPress,
+              onTouchMove:   cancelLongPress,
+              onContextMenu: (e) => { e.preventDefault(); setDeletingMsgId(msg.id); },
+              onClick:       (e) => e.stopPropagation(),
             };
 
             const deleteBar = isDeleting && (
@@ -280,7 +285,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
               </div>
             );
 
-            // ── Shared post: render as standalone mini-card ──────────────────
             if (msg.postId) {
               return (
                 <div
@@ -303,7 +307,6 @@ export default function Messages({ currentUser, username, friends, openConvoWith
               );
             }
 
-            // ── Normal bubble (text or YouTube share) ────────────────────────
             return (
               <div
                 key={msg.id}
@@ -339,12 +342,7 @@ export default function Messages({ currentUser, username, friends, openConvoWith
             placeholder="Message…"
             onKeyDown={(e) => { if (e.key === "Enter") sendText(); }}
           />
-          <button
-            className="dmSendBtn"
-            onClick={sendText}
-            disabled={!text.trim()}
-            aria-label="Send"
-          >
+          <button className="dmSendBtn" onClick={sendText} disabled={!text.trim()} aria-label="Send">
             ↑
           </button>
         </div>
@@ -353,16 +351,20 @@ export default function Messages({ currentUser, username, friends, openConvoWith
   }
 
   // ── Conversation list ─────────────────────────────────────────────────────
+  const isEmpty = conversationsLoaded && conversations.length === 0;
+
   return (
     <div className="dmListPage">
       <div className="dmListHeader">
         <h1 className="dmListTitle">Messages</h1>
-        <button className="dmComposeBtn" onClick={() => setShowCompose(true)} aria-label="Compose">
+        <button className="dmComposeBtn" onClick={() => setShowCompose(true)} aria-label="New message">
           ✏️
         </button>
       </div>
 
-      {conversations.length === 0 ? (
+      {!conversationsLoaded ? (
+        <div className="dmListEmpty"><p>Loading…</p></div>
+      ) : isEmpty ? (
         <div className="dmListEmpty">
           <p>No messages yet</p>
           <p className="dmListEmptyHint">Tap ✏️ to start a conversation</p>
@@ -371,13 +373,9 @@ export default function Messages({ currentUser, username, friends, openConvoWith
         <div className="dmConvoList">
           {conversations.map((convo) => {
             const otherUid = convo.participants.find((uid) => uid !== currentUser?.uid);
-            const other = profiles[otherUid] || {};
+            const other    = profiles[otherUid] || friendProfiles.find(f => f.uid === otherUid) || {};
             return (
-              <button
-                key={convo.id}
-                className="dmConvoRow"
-                onClick={() => setSelectedConvo(convo)}
-              >
+              <button key={convo.id} className="dmConvoRow" onClick={() => setSelectedConvo(convo)}>
                 <div className="dmConvoAvatar">
                   {other.profilePhotoUrl
                     ? <img src={other.profilePhotoUrl} alt="" />
@@ -386,7 +384,7 @@ export default function Messages({ currentUser, username, friends, openConvoWith
                 <div className="dmConvoInfo">
                   <div className="dmConvoTop">
                     <p className="dmConvoName">
-                      {other.firstName || other.name?.split(" ")[0] || other.username}
+                      {other.firstName || other.name?.split(" ")[0] || other.username || "…"}
                     </p>
                     <span className="dmConvoTime">{timeAgo(convo.lastMessageAt)}</span>
                   </div>
@@ -398,6 +396,7 @@ export default function Messages({ currentUser, username, friends, openConvoWith
         </div>
       )}
 
+      {/* Compose sheet */}
       {showCompose && createPortal(
         <div className="dmComposeOverlay" onClick={() => setShowCompose(false)}>
           <div className="dmComposeSheet" onClick={(e) => e.stopPropagation()}>
@@ -406,15 +405,13 @@ export default function Messages({ currentUser, username, friends, openConvoWith
               <h2 className="dmComposeTitle">New Message</h2>
             </div>
             {friendProfiles.length === 0 ? (
-              <p className="dmComposeEmpty">Add friends first to start a chat</p>
+              <p className="dmComposeEmpty">
+                {friends?.length ? "Loading friends…" : "Add friends first to start a chat"}
+              </p>
             ) : (
               <div className="dmComposeFriends">
                 {friendProfiles.map((friend) => (
-                  <button
-                    key={friend.uid}
-                    className="dmComposeFriend"
-                    onClick={() => openConvoWith(friend.uid)}
-                  >
+                  <button key={friend.uid} className="dmComposeFriend" onClick={() => openConvoWith(friend.uid)}>
                     <div className="dmComposeAvatar">
                       {friend.profilePhotoUrl
                         ? <img src={friend.profilePhotoUrl} alt="" />
