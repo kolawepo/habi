@@ -235,34 +235,34 @@ async function changeUsername() {
   }
 }
   return (
-    <Page title="Profile">
+    <div className="profilePage">
       <div className="card profileCard">
-        <label className="profileAvatar">
-  {profilePhotoUrl ? (
-    <img src={profilePhotoUrl} alt="Profile" />
-  ) : (
-    <span>{username ? username.charAt(0).toUpperCase() : "H"}</span>
-  )}
+        <button
+          className="settingsGear"
+          onClick={() => setShowSettings(true)}
+          aria-label="Settings"
+        >
+          ⚙️
+        </button>
 
-  <input
-    type="file"
-    accept="image/*"
-    hidden
-    onChange={handleProfilePhoto}
-  />
-</label>
+        <label className="profileAvatar">
+          {profilePhotoUrl ? (
+            <img src={profilePhotoUrl} alt="Profile" />
+          ) : (
+            <span>{username ? username.charAt(0).toUpperCase() : "H"}</span>
+          )}
+          <input type="file" accept="image/*" hidden onChange={handleProfilePhoto} />
+        </label>
 
         <h2 className="profileUsername">@{username}</h2>
-        <button
-  className="settingsButton"
-  onClick={() => setShowSettings(true)}
->
-  ⚙️ Settings
-</button>
 
-        <p className="profileSkills">
-          Learning: {skills.join(", ")}
-        </p>
+        {skills.length > 0 && (
+          <div className="profileSkillPills">
+            {skills.map(skill => (
+              <span key={skill} className="profileSkillPill">{skill}</span>
+            ))}
+          </div>
+        )}
 
         <div className="profileStats">
 
@@ -323,14 +323,6 @@ async function changeUsername() {
       </div>
 
       <div className="card uploadsCard">
-        <h2 className="uploadsTitle">
-  {profileSection === "uploads"
-    ? "My Uploads"
-    : profileSection === "likes"
-    ? "Liked Videos"
-    : "Saved Videos"}
-</h2>
-
         {myPosts.length === 0 && (
           <div className="emptyVideoState">
             Your uploaded progress will appear here.
@@ -765,6 +757,6 @@ async function changeUsername() {
           </div>
         </div>
       )}
-    </Page>
+    </div>
   );
 }
