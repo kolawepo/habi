@@ -489,7 +489,7 @@ const [streak,              setStreak]              = useState(0);
   async function handleDeletePost(post) {
     if (!currentUser || post.userId !== currentUser.uid) return;
 
-    const confirmDelete = window.confirm("Delete this upload?");
+    const confirmDelete = window.confirm("Delete this post?");
     if (!confirmDelete) return;
 
     try {

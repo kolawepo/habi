@@ -289,7 +289,7 @@ async function changeUsername() {
   </div>
 
   <div>
-    <b>{likedVideos.length}</b>
+    <b>{myPosts.reduce((sum, p) => sum + (p.likedBy?.length || 0), 0)}</b>
     <span>Likes</span>
   </div>
 
@@ -358,7 +358,6 @@ async function changeUsername() {
           className="uploadItem"
           onClick={() => {
             setSelectedUpload(post);
-            setHideBottomPanel(false);
             setShowComments(false);
           }}
         >
@@ -370,13 +369,6 @@ async function changeUsername() {
               alt="upload"
             />
           )}
-        </button>
-
-        <button
-          className="deleteUploadButton"
-          onClick={() => handleDeletePost(post)}
-        >
-          Delete
         </button>
       </div>
     ))}
@@ -528,7 +520,7 @@ async function changeUsername() {
                 <div className="rightSocialActions">
                   <button
                     className="socialAction"
-                    onClick={() => handleDeletePost(selectedUpload)}
+                    onClick={() => { setSelectedUpload(null); setShowComments(false); }}
                   >
                     ✕
                   </button>
@@ -547,6 +539,13 @@ async function changeUsername() {
                   {selectedUpload.skill} •
                   Progress Upload
                 </small>
+
+                <button
+                  className="postDeleteLink"
+                  onClick={() => handleDeletePost(selectedUpload)}
+                >
+                  Delete post
+                </button>
               </div>
 
               {showComments && (
