@@ -1,63 +1,68 @@
-import { useEffect, useState } from "react";
-import Page from "../components/Page";
-import { BIBI } from "../data/appData";
+import { useEffect, useRef, useState } from "react";
 import { BADGE_DEFS } from "../data/badges";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
-export default function Streaks({ streak, myPosts, unlockedBadges = [] }) {
+function formatUnlockDate(ts) {
+  if (!ts) return null;
+  const d = new Date(ts);
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+export default function Streaks({ streak, myPosts, unlockedBadges = [], newlyUnlockedBadges = [] }) {
   const today         = new Date().getDay();
   const adjustedToday = today === 0 ? 6 : today - 1;
 
-  // Each badge is unlocked if Firestore says so OR the real-time condition is met
   const isUnlocked = (id) => {
     if (unlockedBadges.includes(id)) return true;
-    // Real-time fallback for streak/post conditions (shows immediately, Firestore catches up async)
     const progress = (myPosts || []).filter(p => p.postType !== "tutorial");
     switch (id) {
-      case "First Post":   return progress.length >= 1;
-      case "First Friend": return false; // needs friends data — rely on Firestore
-      case "7-Day":        return streak >= 7;
-      case "Consistent":   return streak >= 3;
-      case "Top Learner":  return streak >= 14;
-      case "Dedicated":    return progress.length >= 7;
-      case "Skill Master": return streak >= 30;
-      case "Elite Learner":return streak >= 60;
-      case "100-Day":      return streak >= 100;
-      case "Video Pro":    return (myPosts || []).some(p => p.mediaType?.startsWith("video") && p.postType !== "tutorial");
-      case "Teacher":      return (myPosts || []).some(p => p.postType === "tutorial" && p.mediaType?.startsWith("video"));
-      case "Popular":      return (myPosts || []).some(p => (p.likedBy?.length ?? 0) >= 10);
-      default:             return false;
+      case "First Post":    return progress.length >= 1;
+      case "First Friend":  return false;
+      case "7-Day":         return streak >= 7;
+      case "Consistent":    return streak >= 3;
+      case "Top Learner":   return streak >= 14;
+      case "Dedicated":     return progress.length >= 7;
+      case "Skill Master":  return streak >= 30;
+      case "Elite Learner": return streak >= 60;
+      case "100-Day":       return streak >= 100;
+      case "Video Pro":     return (myPosts || []).some(p => p.mediaType?.startsWith("video") && p.postType !== "tutorial");
+      case "Teacher":       return (myPosts || []).some(p => p.postType === "tutorial" && p.mediaType?.startsWith("video"));
+      case "Popular":       return (myPosts || []).some(p => (p.likedBy?.length ?? 0) >= 10);
+      default:              return false;
     }
   };
 
-  const [showBibi, setShowBibi] = useState(false);
+  const [showNewBadge, setShowNewBadge] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState(null);
+  const bannerTimer = useRef(null);
 
+  // Only show the in-card banner when a badge was JUST unlocked (from checkBadges result)
   useEffect(() => {
-    const celebrated = JSON.parse(localStorage.getItem("celebratedBadges") || "[]");
-    const newOnes    = unlockedBadges.filter(id => !celebrated.includes(id));
-    if (newOnes.length === 0) return;
+    if (!newlyUnlockedBadges.length) return;
 
-    setShowBibi(true);
-    localStorage.setItem("celebratedBadges", JSON.stringify([...celebrated, ...newOnes]));
-    const t = setTimeout(() => setShowBibi(false), 2800);
-    return () => clearTimeout(t);
-  }, [unlockedBadges.join(",")]); // eslint-disable-line
+    // Store unlock dates in localStorage
+    const unlockDates = JSON.parse(localStorage.getItem("badgeUnlockDates") || "{}");
+    newlyUnlockedBadges.forEach(id => {
+      if (!unlockDates[id]) unlockDates[id] = Date.now();
+    });
+    localStorage.setItem("badgeUnlockDates", JSON.stringify(unlockDates));
+
+    setShowNewBadge(true);
+    clearTimeout(bannerTimer.current);
+    bannerTimer.current = setTimeout(() => setShowNewBadge(false), 3000);
+    return () => clearTimeout(bannerTimer.current);
+  }, [newlyUnlockedBadges]); // eslint-disable-line
 
   const postedToday = (myPosts || []).some(p => {
     const d = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || 0);
     return d.toDateString() === new Date().toDateString();
   });
 
-  return (
-    <Page title="Streaks">
-      {showBibi && (
-        <div className="unlockBibiToast">
-          <img src={BIBI.excited} alt="Bibi celebrating" />
-          <p>New badge unlocked! 🎉</p>
-        </div>
-      )}
+  const unlockDates = JSON.parse(localStorage.getItem("badgeUnlockDates") || "{}");
 
+  return (
+    <div className="streaksPage">
       <div className="streakCard">
         <div className="streakFlame">🔥</div>
         <div className="streakNumber">{streak}</div>
@@ -67,6 +72,9 @@ export default function Streaks({ streak, myPosts, unlockedBadges = [] }) {
             <span key={i} className={i === adjustedToday ? "done" : ""}>{day}</span>
           ))}
         </div>
+        {showNewBadge && (
+          <div className="streakNewBanner">🎉 New badge unlocked!</div>
+        )}
       </div>
 
       <p className="streakMotivation">
@@ -81,7 +89,11 @@ export default function Streaks({ streak, myPosts, unlockedBadges = [] }) {
         {BADGE_DEFS.map(badge => {
           const unlocked = isUnlocked(badge.id);
           return (
-            <div key={badge.id} className={`badgeCard${unlocked ? " unlockedBadge" : " lockedBadge"}`}>
+            <div
+              key={badge.id}
+              className={`badgeCard${unlocked ? " unlockedBadge" : " lockedBadge"}`}
+              onClick={() => unlocked && setSelectedBadge(badge)}
+            >
               <span>{badge.emoji}</span>
               <h3>{badge.id}</h3>
               {unlocked
@@ -91,6 +103,20 @@ export default function Streaks({ streak, myPosts, unlockedBadges = [] }) {
           );
         })}
       </div>
-    </Page>
+
+      {selectedBadge && (
+        <div className="badgeDetailOverlay" onClick={() => setSelectedBadge(null)}>
+          <div className="badgeDetailSheet" onClick={e => e.stopPropagation()}>
+            <button className="badgeDetailClose" onClick={() => setSelectedBadge(null)}>✕</button>
+            <div className="badgeDetailEmoji">{selectedBadge.emoji}</div>
+            <h2 className="badgeDetailName">{selectedBadge.id}</h2>
+            <p className="badgeDetailReq">{selectedBadge.requirement}</p>
+            {unlockDates[selectedBadge.id] && (
+              <p className="badgeDetailDate">Unlocked {formatUnlockDate(unlockDates[selectedBadge.id])}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

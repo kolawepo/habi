@@ -1482,6 +1482,10 @@ textarea::placeholder {
    STREAKS
 ========================= */
 
+.streaksPage {
+  padding: 20px 16px 0;
+}
+
 .streakCard {
   background: linear-gradient(160deg, #ff9950, #ff5f87);
   border-radius: 36px;
@@ -1509,6 +1513,22 @@ textarea::placeholder {
   font-weight: 700;
   margin-top: 6px;
   opacity: 0.9;
+}
+
+.streakNewBanner {
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 800;
+  color: white;
+  animation: streakBannerIn 0.35s ease;
+}
+
+@keyframes streakBannerIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .streakMotivation {
@@ -1598,6 +1618,78 @@ textarea::placeholder {
   top: 9px;
   right: 9px;
   font-size: 14px;
+}
+
+/* =========================
+   BADGE DETAIL SHEET
+========================= */
+
+.badgeDetailOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 600;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.badgeDetailSheet {
+  background: var(--card-bg, #fff);
+  border-radius: 28px 28px 0 0;
+  padding: 32px 28px 48px;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  position: relative;
+  animation: sheetUp 0.28s ease;
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(60px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.badgeDetailClose {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--subtext, #aaa);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.badgeDetailEmoji {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.badgeDetailName {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text, #1f1f1f);
+  margin-bottom: 8px;
+}
+
+.badgeDetailReq {
+  font-size: 15px;
+  color: var(--subtext, #888);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.badgeDetailDate {
+  font-size: 13px;
+  color: var(--subtext, #aaa);
+  font-weight: 700;
+}
+
+.unlockedBadge {
+  cursor: pointer;
 }
 
 /* =========================

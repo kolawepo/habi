@@ -166,8 +166,9 @@ useEffect(() => {
   return () => document.removeEventListener("visibilitychange", onVisible);
 }, [currentUser]); // eslint-disable-line
 
-const [streak,          setStreak]          = useState(0);
-  const [unlockedBadges,  setUnlockedBadges]  = useState([]);
+const [streak,              setStreak]              = useState(0);
+  const [unlockedBadges,      setUnlockedBadges]      = useState([]);
+  const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState([]);
 
   const [likedPosts,     setLikedPosts]     = useState([]);
   const [hideLikeCount,  setHideLikeCount]  = useState(false);
@@ -319,7 +320,10 @@ const [streak,          setStreak]          = useState(0);
     lastBadgeKey.current = badgeCheckKey;
     checkBadges({ currentUser, myPosts, friends, streak, unlockedBadges })
       .then(newOnes => {
-        if (newOnes.length > 0) setUnlockedBadges(prev => [...new Set([...prev, ...newOnes])]);
+        if (newOnes.length > 0) {
+          setUnlockedBadges(prev => [...new Set([...prev, ...newOnes])]);
+          setNewlyUnlockedBadges(newOnes);
+        }
       })
       .catch(() => {});
   }); // eslint-disable-line
@@ -464,7 +468,10 @@ const [streak,          setStreak]          = useState(0);
       // Badge check after posting — don't await, runs in background
       checkBadges({ currentUser, myPosts, friends, streak: updatedStreak, unlockedBadges })
         .then(newOnes => {
-          if (newOnes.length > 0) setUnlockedBadges(prev => [...new Set([...prev, ...newOnes])]);
+          if (newOnes.length > 0) {
+            setUnlockedBadges(prev => [...new Set([...prev, ...newOnes])]);
+            setNewlyUnlockedBadges(newOnes);
+          }
         })
         .catch(() => {});
     } catch (error) {
@@ -654,7 +661,10 @@ async function handleAcceptFriendRequest(requesterUid) {
     const updated = [...new Set([...prev, requesterUid])];
     checkBadges({ currentUser, myPosts, friends: updated, streak, unlockedBadges })
       .then(newOnes => {
-        if (newOnes.length > 0) setUnlockedBadges(p => [...new Set([...p, ...newOnes])]);
+        if (newOnes.length > 0) {
+          setUnlockedBadges(p => [...new Set([...p, ...newOnes])]);
+          setNewlyUnlockedBadges(newOnes);
+        }
       })
       .catch(() => {});
     return updated;
@@ -1072,6 +1082,7 @@ async function handleRemoveFriend
           openMessageUid={openMessageUid}
           onClearOpenUid={() => setOpenMessageUid(null)}
           unlockedBadges={unlockedBadges}
+          newlyUnlockedBadges={newlyUnlockedBadges}
           />
       )}
 
