@@ -2553,26 +2553,22 @@ textarea::placeholder {
 ========================= */
 
 .profileSections {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin: 22px 0;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.profileSections::-webkit-scrollbar {
-  display: none;
 }
 
 .profileSections button {
   border: none;
   border-radius: 999px;
-  padding: 13px 18px;
+  padding: 13px 8px;
   background: white;
   color: #777;
   font-weight: 800;
   white-space: nowrap;
   font-size: 14px;
+  width: 100%;
 }
 
 .profileSections .activeProfileSection {
