@@ -1850,9 +1850,8 @@ textarea::placeholder {
 }
 
 .profileStats {
-  display: flex;
-  justify-content: center;
-  gap: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   margin-top: 26px;
 }
 
@@ -1860,6 +1859,7 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
 }
 
 .profileStats b {
