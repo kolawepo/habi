@@ -58,6 +58,8 @@ export default function MainApp({
   onToggleHideLikeCount,
   unlockedBadges,
   newlyUnlockedBadges,
+  referralCode,
+  referralCount,
 }) {
   const [showSearch, setShowSearch] = useState(false);
 
@@ -140,6 +142,8 @@ export default function MainApp({
             setProfilePhotoUrl={setProfilePhotoUrl}
             hideLikeCount={hideLikeCount}
             onToggleHideLikeCount={onToggleHideLikeCount}
+            referralCode={referralCode}
+            referralCount={referralCount}
           />
         )}
       </div>

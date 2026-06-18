@@ -53,6 +53,7 @@ import AuthScreen from "./components/AuthScreen";
 import MainApp from "./components/MainApp";
 import IOSInstallPrompt from "./components/IOSInstallPrompt";
 import { checkBadges } from "./utils/checkBadges";
+import { creditReferral } from "./utils/referral";
 
 
 export default function App() {
@@ -71,6 +72,19 @@ export default function App() {
     return p.get("tab") === "messages" ? (p.get("uid") || null) : null;
   });
 
+  const [referralCode, setReferralCode] = useState("");
+  const [referralCount, setReferralCount] = useState(0);
+
+  // Captured once on first render so authMode's initial value can react to it.
+  const [referralCodeFromUrl] = useState(() => {
+    const match = window.location.pathname.match(/^\/r\/([A-Za-z0-9_-]+)$/);
+    return match ? match[1].toLowerCase() : null;
+  });
+  // True when this load originated from a /r/{code} link, so the auth-state effect
+  // below sends a logged-out visitor straight into onboarding (same as "Get Started")
+  // instead of the splash screen.
+  const referralLandingRef = useRef(!!referralCodeFromUrl);
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const name = `${firstName} ${lastName}`.trim();
@@ -80,7 +94,13 @@ export default function App() {
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedGoal, setSelectedGoal] = useState("");
 
-  const [authMode, setAuthMode] = useState("login");
+  const [authMode, setAuthMode] = useState(() => (referralCodeFromUrl ? "create" : "login"));
+
+  useEffect(() => {
+    if (!referralCodeFromUrl) return;
+    localStorage.setItem("habi_referral_code", referralCodeFromUrl);
+    window.history.replaceState({}, "", "/");
+  }, [referralCodeFromUrl]);
 
   const [uploadPreview, setUploadPreview] = useState(null);
   const [uploadFile, setUploadFile] = useState(null);
@@ -167,6 +187,7 @@ useEffect(() => {
 }, [currentUser]); // eslint-disable-line
 
 const [streak,              setStreak]              = useState(0);
+  const [lastPostDate,        setLastPostDate]        = useState(null);
   const [unlockedBadges,      setUnlockedBadges]      = useState([]);
   const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState([]);
 
@@ -205,6 +226,9 @@ const [streak,              setStreak]              = useState(0);
       try {
         if (user) {
           setCurrentUser(user);
+          // A referral code can only ever apply at signup, so it's stale once we know
+          // the visitor already has an account.
+          localStorage.removeItem("habi_referral_code");
 
           const userDoc = await getDoc(doc(db, "users", user.uid));
 
@@ -219,6 +243,7 @@ const [streak,              setStreak]              = useState(0);
             setSelectedSkills(userData.selectedSkills || []);
             setSelectedGoal(userData.selectedGoal || "");
             setStreak(userData.streak || 0);
+            setLastPostDate(userData.lastPostDate || null);
             setUnlockedBadges(userData.unlockedBadges || []);
             setFriends(userData.friends || []);
             setFriendRequests(userData.friendRequests || []);
@@ -226,6 +251,8 @@ const [streak,              setStreak]              = useState(0);
             setSavedVideos(userData.savedVideos || []);
             if (userData.darkMode !== undefined) setDarkMode(userData.darkMode);
             setHideLikeCount(userData.hideLikeCount || false);
+            setReferralCode(userData.referralCode || "");
+            setReferralCount(userData.referralCount || 0);
 
             setScreen("main");
           } else {
@@ -233,12 +260,12 @@ const [streak,              setStreak]              = useState(0);
           }
         } else {
           setCurrentUser(null);
-          setScreen("splash");
+          setScreen(referralLandingRef.current ? "interests" : "splash");
         }
       } catch (error) {
         console.error("Auth check failed:", error);
         setCurrentUser(null);
-        setScreen("splash");
+        setScreen(referralLandingRef.current ? "auth" : "splash");
       } finally {
         setAuthChecked(true);
       }
@@ -302,11 +329,13 @@ const [streak,              setStreak]              = useState(0);
     setFriends(data.friends || []);
     setFriendRequests(data.friendRequests || []);
     setStreak(data.streak || 0);
+    setLastPostDate(data.lastPostDate || null);
     setUnlockedBadges(data.unlockedBadges || []);
     setProfilePhotoUrl(data.profilePhotoUrl || "");
     setUsername(data.username || "");
     setSelectedSkills(data.selectedSkills || []);
     setHideLikeCount(data.hideLikeCount || false);
+    setReferralCount(data.referralCount || 0);
   });
 
   return () => unsubscribe();
@@ -327,6 +356,26 @@ const [streak,              setStreak]              = useState(0);
       })
       .catch(() => {});
   }); // eslint-disable-line
+
+  // ── Real-time streak freshness check (runs on Home/Streaks load) ───────────
+  function checkStreakFreshness(uid, lpDate, currentStreak) {
+    if (!uid || !lpDate || currentStreak === 0) return; // nothing to reset
+
+    const now = new Date();
+    const today = now.toDateString();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toDateString();
+
+    if (lpDate === today || lpDate === yesterday) return; // still valid — don't touch
+
+    setStreak(0);
+    updateDoc(doc(db, "users", uid), { streak: 0 }).catch(() => {});
+  }
+
+  useEffect(() => {
+    if (tab !== "home" && tab !== "streaks") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkStreakFreshness(currentUser?.uid, lastPostDate, streak);
+  }, [tab, currentUser, lastPostDate, streak]);
 
   function toggleTheme(themeName) {
     setSelectedThemes((prev) =>
@@ -442,6 +491,13 @@ const [streak,              setStreak]              = useState(0);
       const userData  = userSnap.data();
       const lastPostDate = userData?.lastPostDate;
       let updatedStreak  = userData?.streak || 0;
+
+      // Credit the referrer on the referred user's first post, not at signup —
+      // this is gated by referralCredited (set false at signup) so it only fires once.
+      if (userData?.referredBy && !userData?.referralCredited) {
+        await creditReferral(userData.referredBy);
+        await updateDoc(userRef, { referralCredited: true });
+      }
 
       if (lastPostDate === today) {
         // Already posted today — streak unchanged
@@ -1088,6 +1144,8 @@ async function handleRemoveFriend
           onClearOpenUid={() => setOpenMessageUid(null)}
           unlockedBadges={unlockedBadges}
           newlyUnlockedBadges={newlyUnlockedBadges}
+          referralCode={referralCode}
+          referralCount={referralCount}
           />
       )}
 

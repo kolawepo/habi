@@ -576,6 +576,13 @@ textarea {
   font-weight: 700;
 }
 
+@media (min-width: 768px) {
+  .authCard {
+    max-width: 640px;
+    padding: 56px 48px;
+  }
+}
+
 /* =========================
    MAIN APP
 ========================= */
@@ -1800,6 +1807,22 @@ textarea::placeholder {
 .settingsGear:hover,
 .settingsGear:active { opacity: 1; }
 
+.referralIcon {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.referralIcon:hover,
+.referralIcon:active { opacity: 1; }
+
 .profileAvatar {
   width: 130px;
   height: 130px;
@@ -1868,6 +1891,58 @@ textarea::placeholder {
 
 .profileStats span {
   color: #888;
+}
+
+.referralCodeBox {
+  background: linear-gradient(135deg, #ff9950, #ff5f87);
+  border-radius: 20px;
+  padding: 22px;
+  color: white;
+  text-align: center;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  word-break: break-all;
+}
+
+.referralLinkRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface, #f6f1ee);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.referralLinkText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-secondary, #777);
+}
+
+.referralCopyButton {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 800;
+  font-size: 13px;
+  background: white;
+  color: #1f1f1f;
+}
+
+.referralCountText {
+  text-align: center;
+  color: var(--text-secondary, #777);
+  font-weight: 600;
+  margin-bottom: 18px;
 }
 
 .uploadsCard {

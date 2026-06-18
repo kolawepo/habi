@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import ShareModal from "../components/ShareModal";
+import { copyText, shareLink } from "../utils/share";
 
 function timeAgo(ts) {
   if (!ts) return "";
@@ -48,34 +49,8 @@ function notifIcon(type) {
 const INVITE_URL  = "https://habi-sepia.vercel.app";
 const INVITE_TEXT = "Join me on Habi — the app for learning new skills! Sign up here: " + INVITE_URL;
 
-async function copyText(text) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-  } else {
-    const el = Object.assign(document.createElement("textarea"), {
-      value: text,
-      style: "position:fixed;top:-9999px;left:-9999px;opacity:0",
-    });
-    document.body.appendChild(el);
-    el.focus(); el.select();
-    document.execCommand("copy");
-    document.body.removeChild(el);
-  }
-}
-
 async function shareInvite(setToast) {
-  try {
-    if (navigator.share) {
-      await navigator.share({ title: "Habi", text: INVITE_TEXT, url: INVITE_URL });
-    } else {
-      await copyText(INVITE_TEXT);
-      setToast(true);
-      setTimeout(() => setToast(false), 2500);
-    }
-  } catch (err) {
-    if (err.name === "AbortError") return;
-    try { await copyText(INVITE_TEXT); setToast(true); setTimeout(() => setToast(false), 2500); } catch {}
-  }
+  await shareLink({ title: "Habi", text: INVITE_TEXT, url: INVITE_URL }, setToast);
 }
 
 function isOnline(lastSeen) {

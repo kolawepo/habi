@@ -23,6 +23,7 @@ import {
 } from "firebase/storage";
 
 import { auth, db, storage } from "../firebase";
+import { copyText, shareLink } from "../utils/share";
 export default function Profile({
   username,
   skills,
@@ -37,8 +38,34 @@ export default function Profile({
   setProfilePhotoUrl,
   hideLikeCount,
   onToggleHideLikeCount,
+  referralCode,
+  referralCount,
 }) {
   const [selectedUpload, setSelectedUpload] = useState(null);
+  const [showReferral, setShowReferral] = useState(false);
+  const [referralToast, setReferralToast] = useState(false);
+  const [referralCopied, setReferralCopied] = useState(false);
+
+  const referralLink = referralCode ? `https://habi-sepia.vercel.app/r/${referralCode}` : "";
+
+  function shareReferral() {
+    if (!referralLink) return;
+    shareLink(
+      {
+        title: "Habi",
+        text: `Join me on Habi — use my link to sign up: ${referralLink}`,
+        url: referralLink,
+      },
+      setReferralToast
+    );
+  }
+
+  async function copyReferralLink() {
+    if (!referralLink) return;
+    await copyText(referralLink);
+    setReferralCopied(true);
+    setTimeout(() => setReferralCopied(false), 2000);
+  }
 
   const [commentText, setCommentText] = useState("");
 
@@ -254,6 +281,16 @@ async function changeUsername() {
   return (
     <div className="profilePage">
       <div className="card profileCard">
+        {referralCode && (
+          <button
+            className="referralIcon"
+            onClick={() => setShowReferral(true)}
+            aria-label="Referral"
+          >
+            🎁
+          </button>
+        )}
+
         <button
           className="settingsGear"
           onClick={() => setShowSettings(true)}
@@ -300,7 +337,6 @@ async function changeUsername() {
 
 </div>
 
-        
         <div className="profileSections">
 
   <button
@@ -463,6 +499,38 @@ async function changeUsername() {
 
       <button className="settingsSignOutButton" onClick={onSignOut}>
         Sign out
+      </button>
+    </div>
+  </div>
+)}
+{showReferral && (
+  <div className="settingsModal" onClick={() => setShowReferral(false)}>
+    <div className="settingsSheet" onClick={(e) => e.stopPropagation()}>
+      <div className="settingsHeader">
+        <h2>Invite Friends</h2>
+
+        <button onClick={() => setShowReferral(false)}>
+          ✕
+        </button>
+      </div>
+
+      <div className="referralCodeBox">{referralCode}</div>
+
+      <div className="referralLinkRow">
+        <span className="referralLinkText">{referralLink}</span>
+        <button className="referralCopyButton" onClick={copyReferralLink}>
+          {referralCopied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+
+      <p className="referralCountText">
+        {referralCount > 0
+          ? `${referralCount} friend${referralCount === 1 ? "" : "s"} invited so far`
+          : "No friends invited yet"}
+      </p>
+
+      <button className="primaryButton" onClick={shareReferral}>
+        {referralToast ? "Link copied!" : "Share invite link"}
       </button>
     </div>
   </div>

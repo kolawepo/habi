@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
+import { generateUniqueReferralCode, findReferrerByCode } from "../utils/referral";
 export default function AuthScreen({
   authMode,
   setAuthMode,
@@ -38,6 +39,7 @@ export default function AuthScreen({
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralInput, setReferralInput] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -68,6 +70,12 @@ if (!usernameSnapshot.empty) {
   return;
 }
 
+        // Manually-entered code wins over one carried in from a /r/{code} link,
+        // in case someone clicked one friend's link but wants credit to go elsewhere.
+        const urlReferralCode = localStorage.getItem("habi_referral_code") || "";
+        const finalReferralCode = referralInput.trim() || urlReferralCode;
+        const referrer = finalReferralCode ? await findReferrerByCode(finalReferralCode) : null;
+
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
@@ -75,6 +83,8 @@ if (!usernameSnapshot.empty) {
         );
 
         const user = userCredential.user;
+
+        const myReferralCode = await generateUniqueReferralCode(cleanUsername);
 
         await setDoc(doc(db, "users", user.uid), {
           uid: user.uid,
@@ -97,7 +107,15 @@ fullNameSearch: `${firstName.trim()} ${lastName.trim()}`.toLowerCase(),
 usernameLastChanged: null,
 previousUsernames: [],
 createdAt: new Date(),
+          referralCode: myReferralCode,
+          referredBy: referrer?.uid || null,
+          referralCount: 0,
+          // Credited once on the referred user's first post, not at signup —
+          // see handleCreatePost in App.jsx.
+          referralCredited: false,
         });
+
+        localStorage.removeItem("habi_referral_code");
 
         setUsername(cleanUsername);
         setStreak(0);
@@ -183,6 +201,12 @@ createdAt: new Date(),
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="@username"
+            />
+
+            <input
+              value={referralInput}
+              onChange={(e) => setReferralInput(e.target.value)}
+              placeholder="Referral code (optional)"
             />
           </>
         )}
