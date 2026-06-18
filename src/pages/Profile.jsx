@@ -6,6 +6,7 @@ import {
   updateDoc,
   collection,
   addDoc,
+  deleteDoc,
   query,
   where,
   getDocs,
@@ -80,11 +81,17 @@ export default function Profile({
 );
 
   const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
-    const comments = snapshot.docs.map((docItem) => ({
+    const allDocs = snapshot.docs.map((docItem) => ({
       id: docItem.id,
       ...docItem.data(),
-      replies: [],
     }));
+
+    const comments = allDocs
+      .filter((c) => !c.parentCommentId)
+      .map((comment) => ({
+        ...comment,
+        replies: allDocs.filter((c) => c.parentCommentId === comment.id),
+      }));
 
     setLocalComments((prev) => ({
       ...prev,
@@ -99,6 +106,7 @@ export default function Profile({
   const [replyText, setReplyText] = useState("");
 
   const [showComments, setShowComments] = useState(false);
+  const [showActionBar, setShowActionBar] = useState(true);
 
   const [profileSection, setProfileSection] = useState("uploads");
   const [showSettings, setShowSettings] = useState(false);
@@ -126,32 +134,23 @@ const [changingUsername, setChangingUsername] = useState(false);
 
 
 
-  function addReply(postId, commentId) {
+  async function addReply(postId, commentId) {
     if (!replyText.trim()) return;
 
-    setLocalComments((prev) => ({
-      ...prev,
-      [postId]: (prev[postId] || []).map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            replies: [
-              ...(comment.replies || []),
-              {
-                id: Date.now(),
-                username,
-                text: replyText,
-              },
-            ],
-          };
-        }
+    try {
+      await addDoc(collection(db, "comments"), {
+        postId,
+        parentCommentId: commentId,
+        username,
+        text: replyText.trim(),
+        createdAt: serverTimestamp(),
+      });
 
-        return comment;
-      }),
-    }));
-
-    setReplyText("");
-    setReplyingTo(null);
+      setReplyText("");
+      setReplyingTo(null);
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   function deleteComment(postId, commentId) {
@@ -163,22 +162,12 @@ const [changingUsername, setChangingUsername] = useState(false);
     }));
   }
 
-  function deleteReply(postId, commentId, replyId) {
-    setLocalComments((prev) => ({
-      ...prev,
-      [postId]: (prev[postId] || []).map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            replies: (comment.replies || []).filter(
-              (reply) => reply.id !== replyId
-            ),
-          };
-        }
-
-        return comment;
-      }),
-    }));
+  async function deleteReply(replyId) {
+    try {
+      await deleteDoc(doc(db, "comments", replyId));
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   // Close modal when the post is deleted (myPosts snapshot fires without it)
@@ -395,6 +384,7 @@ async function changeUsername() {
           onClick={() => {
             setSelectedUpload(post);
             setShowComments(false);
+            setShowActionBar(true);
           }}
         >
           {post.mediaType?.startsWith("video") ? (
@@ -541,7 +531,7 @@ async function changeUsername() {
         const isLiked = (currentPost.likedBy || []).includes(uid);
         return (
         <div className="uploadModal">
-          <div className="socialViewer">
+          <div className={showActionBar ? "socialViewer" : "socialViewer socialViewerExpanded"}>
 
             <div className="socialHeader">
               <button
@@ -561,20 +551,30 @@ async function changeUsername() {
               </div>
             </div>
 
-            <div className="socialMediaWrapper">
+            <div className={showActionBar ? "socialMediaWrapper" : "socialMediaWrapper expandedMedia"}>
               {selectedUpload.mediaType?.startsWith("video") ? (
                 <video src={selectedUpload.mediaUrl} controls autoPlay className="socialFullscreenMedia" />
               ) : (
                 <img src={selectedUpload.mediaUrl} alt="post" className="socialFullscreenMedia" />
               )}
+
+              {!showActionBar && (
+                <button
+                  className="showActionBarChevron"
+                  onClick={() => setShowActionBar(true)}
+                  aria-label="Show post details"
+                >
+                  ↑
+                </button>
+              )}
             </div>
 
-            <div className="socialBottomPanel">
+            <div className={showActionBar ? "socialBottomPanel" : "socialBottomPanel hiddenBottomPanel"}>
               <div className="socialActionsRow">
                 <div className="leftSocialActions">
                   <button
                     className={isLiked ? "socialAction activeSocialAction" : "socialAction"}
-                    onClick={() => toggleLike(selectedUpload)}
+                    onClick={() => toggleLike(currentPost)}
                   >
                     {isLiked ? "❤️" : "🤍"}
                   </button>
@@ -588,7 +588,7 @@ async function changeUsername() {
                 <div className="rightSocialActions">
                   <button
                     className="socialAction"
-                    onClick={() => { setSelectedUpload(null); setShowComments(false); }}
+                    onClick={() => setShowActionBar(false)}
                   >
                     ✕
                   </button>
@@ -699,13 +699,7 @@ async function changeUsername() {
 
                                 <button
                                   className="deleteCommentButton"
-                                  onClick={() =>
-                                    deleteReply(
-                                      selectedUpload.id,
-                                      comment.id,
-                                      reply.id
-                                    )
-                                  }
+                                  onClick={() => deleteReply(reply.id)}
                                 >
                                   ✕
                                 </button>

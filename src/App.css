@@ -2140,6 +2140,23 @@ textarea::placeholder {
   min-height: 100% !important;
 }
 
+.showActionBarChevron {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 18px;
+  font-weight: 900;
+  z-index: 20;
+}
+
 .socialFullscreenMedia {
   width: 100%;
   height: 100%;
@@ -2324,25 +2341,6 @@ textarea::placeholder {
   font-weight: 800;
 }
 
-.hiddenBottomPanel {
-  display: none;
-}
-
-.showPanelButton {
-  position: absolute;
-  bottom: 18px;
-  right: 18px;
-  width: 52px;
-  height: 52px;
-  border: none;
-  border-radius: 50%;
-  background: white;
-  color: #e95443;
-  font-size: 28px;
-  font-weight: 900;
-  z-index: 50;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
-}
 
 .replyInputBar {
   display: flex;
