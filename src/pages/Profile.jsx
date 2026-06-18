@@ -153,13 +153,12 @@ const [changingUsername, setChangingUsername] = useState(false);
     }
   }
 
-  function deleteComment(postId, commentId) {
-    setLocalComments((prev) => ({
-      ...prev,
-      [postId]: (prev[postId] || []).filter(
-        (comment) => comment.id !== commentId
-      ),
-    }));
+  async function deleteComment(commentId) {
+    try {
+      await deleteDoc(doc(db, "comments", commentId));
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   async function deleteReply(replyId) {
@@ -603,11 +602,6 @@ async function changeUsername() {
                   {selectedUpload.caption}
                 </p>
 
-                <small>
-                  {selectedUpload.skill} •
-                  Progress Upload
-                </small>
-
                 <button
                   className="postDeleteLink"
                   onClick={() => handleDeletePost(selectedUpload)}
@@ -636,12 +630,7 @@ async function changeUsername() {
 
                           <button
                             className="deleteCommentButton"
-                            onClick={() =>
-                              deleteComment(
-                                selectedUpload.id,
-                                comment.id
-                              )
-                            }
+                            onClick={() => deleteComment(comment.id)}
                           >
                             ✕
                           </button>
