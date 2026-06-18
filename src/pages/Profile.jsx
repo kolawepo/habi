@@ -15,6 +15,7 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
+  writeBatch,
 } from "firebase/firestore";
 
 import {
@@ -155,7 +156,16 @@ const [changingUsername, setChangingUsername] = useState(false);
 
   async function deleteComment(commentId) {
     try {
-      await deleteDoc(doc(db, "comments", commentId));
+      const repliesQuery = query(
+        collection(db, "comments"),
+        where("parentCommentId", "==", commentId)
+      );
+      const repliesSnapshot = await getDocs(repliesQuery);
+
+      const batch = writeBatch(db);
+      batch.delete(doc(db, "comments", commentId));
+      repliesSnapshot.docs.forEach((replyDoc) => batch.delete(replyDoc.ref));
+      await batch.commit();
     } catch (error) {
       alert(error.message);
     }
