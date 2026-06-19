@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   createUserWithEmailAndPassword,
@@ -8,12 +8,13 @@ import {
 
 import {
   doc,
-  setDoc,
   getDoc,
   collection,
   query,
   where,
   getDocs,
+  runTransaction,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
@@ -43,8 +44,14 @@ export default function AuthScreen({
   const [referralInput, setReferralInput] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   async function handleAuth() {
+    // Synchronous guard against a double-tap firing this twice before the
+    // `disabled` state from `loading` visually commits.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+
     setAuthMessage("");
     setLoading(true);
 
@@ -91,37 +98,58 @@ if (!usernameSnapshot.empty) {
         try {
           const myReferralCode = await generateUniqueReferralCode(cleanUsername);
 
-          await setDoc(doc(db, "users", user.uid), {
-            uid: user.uid,
-            firstName: firstName.trim(),
+          // Atomically claim the username and create the profile together.
+          // usernames/{username} acts as a uniqueness ledger keyed by the
+          // username itself — Firestore's transaction engine guarantees that
+          // if two signups race for the same name, only one read-of-empty can
+          // win; the other is retried and sees the doc already taken.
+          await runTransaction(db, async (transaction) => {
+            const usernameRef = doc(db, "usernames", cleanUsername);
+            const usernameSnap = await transaction.get(usernameRef);
+
+            if (usernameSnap.exists()) {
+              throw new Error("Username already taken.");
+            }
+
+            transaction.set(usernameRef, {
+              uid: user.uid,
+              createdAt: serverTimestamp(),
+            });
+
+            transaction.set(doc(db, "users", user.uid), {
+              uid: user.uid,
+              firstName: firstName.trim(),
 lastName: lastName.trim(),
 name: `${firstName.trim()} ${lastName.trim()}`,
 nameSearch: firstName.trim().toLowerCase(),
 fullNameSearch: `${firstName.trim()} ${lastName.trim()}`.toLowerCase(),
-            username: cleanUsername,
-            likedVideos: [],
-            savedVideos: [],
-            email,
-            selectedThemes,
-            selectedSkills: [...new Set(selectedSkills)],
-            selectedGoal,
-            streak: 0,
-            lastPostDate: "",
-            friends: [],
-            friendRequests: [],
+              username: cleanUsername,
+              likedVideos: [],
+              savedVideos: [],
+              email,
+              selectedThemes,
+              selectedSkills: [...new Set(selectedSkills)],
+              selectedGoal,
+              streak: 0,
+              lastPostDate: "",
+              friends: [],
+              friendRequests: [],
 usernameLastChanged: null,
 previousUsernames: [],
 createdAt: new Date(),
-            referralCode: myReferralCode,
-            referredBy: referrer?.uid || null,
-            referralCount: 0,
-            // Credited once on the referred user's first post, not at signup —
-            // see handleCreatePost in App.jsx.
-            referralCredited: false,
+              referralCode: myReferralCode,
+              referredBy: referrer?.uid || null,
+              referralCount: 0,
+              // Credited once on the referred user's first post, not at signup —
+              // see handleCreatePost in App.jsx.
+              referralCredited: false,
+            });
           });
         } catch (profileError) {
           await user.delete().catch(() => signOut(auth).catch(() => {}));
-          throw new Error("Something went wrong setting up your account. Please try again.", { cause: profileError });
+          throw new Error(profileError.message === "Username already taken."
+            ? "Username already taken."
+            : "Something went wrong setting up your account. Please try again.", { cause: profileError });
         }
 
         localStorage.removeItem("habi_referral_code");
@@ -166,6 +194,7 @@ createdAt: new Date(),
       setAuthMessage(error.message);
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   }
 

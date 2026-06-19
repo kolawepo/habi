@@ -40,6 +40,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- usernames (uniqueness ledger, doc id = the username) ----------
+    match /usernames/{name} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      // No rename flow writes/frees these yet (Profile.jsx's changeUsername
+      // doesn't touch this ledger) — leave update/delete closed for now.
+      allow update, delete: if false;
+    }
+
     // ---------- posts ----------
     match /posts/{postId} {
       allow read: if isSignedIn();
