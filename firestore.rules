@@ -1,0 +1,119 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function onlyChanged(field) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field]);
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      // Any signed-in user can read profiles (needed for friend search, friend
+      // cards, and DM participant lookups). This also exposes fields like email
+      // and fcmToken to other logged-in users — Firestore rules can't redact
+      // individual fields on a read. Accepted for launch; revisit by splitting
+      // public/private profile data into separate docs post-launch.
+      allow read: if isSignedIn();
+
+      allow create: if isOwner(uid);
+
+      // Owner can update anything on their own doc. Non-owners may only touch
+      // one specific field at a time, for specific known flows:
+      //   - friendRequests: target of a friend request/cancel
+      //   - friends: the acceptor's own doc gets the requester added there too
+      //   - referralCount: credited by the referred user's first post, capped at +1
+      allow update: if isOwner(uid)
+        || (isSignedIn() && onlyChanged('friendRequests'))
+        || (isSignedIn() && onlyChanged('friends'))
+        || (isSignedIn() && onlyChanged('referralCount')
+              && request.resource.data.referralCount == resource.data.referralCount + 1);
+
+      allow delete: if false;
+    }
+
+    // ---------- posts ----------
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      // Owner can update anything. Non-owners may only touch the like fields
+      // (liking/unliking someone else's post).
+      allow update: if (isSignedIn() && resource.data.userId == request.auth.uid)
+        || (isSignedIn() && onlyChanged('likedBy'))
+        || (isSignedIn() && onlyChanged('likes'));
+
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // ---------- comments (includes replies, via parentCommentId) ----------
+    match /comments/{commentId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      // Delete allowed for the comment's author OR the owner of the post it's on
+      // (post owners can moderate comments on their own posts).
+      allow delete: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || resource.data.postOwnerId == request.auth.uid);
+
+      allow update: if false; // no edit feature exists
+    }
+
+    // ---------- notifications ----------
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      // Created by the sender, targeting the recipient's userId. There's no
+      // verified senderId field on notification docs today, so this can't be
+      // restricted to "you can only notify people you actually interacted
+      // with" without an app code change. Accepted spam-only risk for launch.
+      allow create: if isSignedIn() && request.resource.data.userId is string;
+
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // ---------- DMs ----------
+    match /dms/{convoId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.participants.size() == 2;
+
+      allow update: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow delete: if false;
+
+      match /messages/{msgId} {
+        function isParticipant() {
+          return request.auth.uid in
+            get(/databases/$(database)/documents/dms/$(convoId)).data.participants;
+        }
+
+        allow read: if isSignedIn() && isParticipant();
+
+        allow create: if isSignedIn()
+          && isParticipant()
+          && request.resource.data.senderId == request.auth.uid;
+
+        allow update: if isSignedIn() && isParticipant();
+        allow delete: if isSignedIn() && isParticipant();
+      }
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

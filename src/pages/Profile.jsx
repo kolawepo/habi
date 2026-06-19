@@ -118,17 +118,17 @@ const [changingUsername, setChangingUsername] = useState(false);
   if (!commentText.trim()) return;
 
   try {
-    const docRef = await addDoc(collection(db, "comments"), {
+    await addDoc(collection(db, "comments"), {
       postId: postId,
+      userId: auth.currentUser.uid,
+      postOwnerId: selectedUpload?.userId,
       username: username,
       text: commentText.trim(),
       createdAt: serverTimestamp(),
     });
 
-    console.log("Comment saved with ID:", docRef.id);
     setCommentText("");
   } catch (error) {
-    console.error("Comment error:", error);
     alert(error.message);
   }
 }
@@ -142,6 +142,8 @@ const [changingUsername, setChangingUsername] = useState(false);
       await addDoc(collection(db, "comments"), {
         postId,
         parentCommentId: commentId,
+        userId: auth.currentUser.uid,
+        postOwnerId: selectedUpload?.userId,
         username,
         text: replyText.trim(),
         createdAt: serverTimestamp(),
