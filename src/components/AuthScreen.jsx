@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 
 import {
@@ -84,36 +85,44 @@ if (!usernameSnapshot.empty) {
 
         const user = userCredential.user;
 
-        const myReferralCode = await generateUniqueReferralCode(cleanUsername);
+        // The Auth account already exists at this point. If anything below
+        // fails, roll it back so the email isn't permanently stuck with no
+        // profile (signing in afterward would otherwise be a dead end).
+        try {
+          const myReferralCode = await generateUniqueReferralCode(cleanUsername);
 
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          firstName: firstName.trim(),
+          await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            firstName: firstName.trim(),
 lastName: lastName.trim(),
 name: `${firstName.trim()} ${lastName.trim()}`,
 nameSearch: firstName.trim().toLowerCase(),
 fullNameSearch: `${firstName.trim()} ${lastName.trim()}`.toLowerCase(),
-          username: cleanUsername,
-          likedVideos: [],
-          savedVideos: [],
-          email,
-          selectedThemes,
-          selectedSkills: [...new Set(selectedSkills)],
-          selectedGoal,
-          streak: 0,
-          lastPostDate: "",
-          friends: [],
-          friendRequests: [],
+            username: cleanUsername,
+            likedVideos: [],
+            savedVideos: [],
+            email,
+            selectedThemes,
+            selectedSkills: [...new Set(selectedSkills)],
+            selectedGoal,
+            streak: 0,
+            lastPostDate: "",
+            friends: [],
+            friendRequests: [],
 usernameLastChanged: null,
 previousUsernames: [],
 createdAt: new Date(),
-          referralCode: myReferralCode,
-          referredBy: referrer?.uid || null,
-          referralCount: 0,
-          // Credited once on the referred user's first post, not at signup —
-          // see handleCreatePost in App.jsx.
-          referralCredited: false,
-        });
+            referralCode: myReferralCode,
+            referredBy: referrer?.uid || null,
+            referralCount: 0,
+            // Credited once on the referred user's first post, not at signup —
+            // see handleCreatePost in App.jsx.
+            referralCredited: false,
+          });
+        } catch (profileError) {
+          await user.delete().catch(() => signOut(auth).catch(() => {}));
+          throw new Error("Something went wrong setting up your account. Please try again.", { cause: profileError });
+        }
 
         localStorage.removeItem("habi_referral_code");
 
@@ -146,7 +155,12 @@ createdAt: new Date(),
 
         onEnter();
       } else {
-        setAuthMessage("Account profile was not found.");
+        // Auth account exists but the profile write never completed (e.g. a
+        // connection drop mid-signup). Clean up the orphan so this email is
+        // free again, instead of leaving a permanent dead end.
+        await user.delete().catch(() => signOut(auth).catch(() => {}));
+        setAuthMessage("We couldn't find your profile — this can happen after a connection issue during signup. Please sign up again.");
+        setAuthMode("create");
       }
     } catch (error) {
       setAuthMessage(error.message);
