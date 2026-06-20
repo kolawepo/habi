@@ -215,6 +215,7 @@ const [streak,              setStreak]              = useState(0);
   const myPosts = posts.filter(
     (post) => post.userId === currentUser?.uid && post.postType !== "tutorial"
   );
+  const myLikedPosts = posts.filter((post) => post.likedBy?.includes(currentUser?.uid));
   const friendFeedPosts = posts.filter((post) =>
   friends.includes(post.userId)
 );
@@ -814,14 +815,14 @@ async function handleRemoveFriend
 
   async function handleLikePost(post) {
     if (!currentUser || post.userId === currentUser.uid) return;
-    const isLiked = post.likes?.includes(currentUser.uid) || likedPosts.includes(post.id);
+    const isLiked = post.likedBy?.includes(currentUser.uid) || likedPosts.includes(post.id);
 
     setLikedPosts((prev) =>
       isLiked ? prev.filter((id) => id !== post.id) : [...new Set([...prev, post.id])]
     );
 
     await updateDoc(doc(db, "posts", post.id), {
-      likes: isLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid),
+      likedBy: isLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid),
     });
 
     if (isLiked) return;
@@ -1122,6 +1123,7 @@ async function handleRemoveFriend
           handleRemoveFriend={handleRemoveFriend}
           currentUser={currentUser}
           myPosts={myPosts}
+          myLikedPosts={myLikedPosts}
           handleDeletePost={handleDeletePost}
           setLikedVideos={setLikedVideos}
           likedVideos={likedVideos}

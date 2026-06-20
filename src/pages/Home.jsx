@@ -13,6 +13,8 @@ function ytCmd(iframe, fn, args = []) {
 
 const isMobile = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
 
+const LS_SKILL_KEY = "habi_lastSkill";
+
 // ── Cache ──────────────────────────────────────────────────────────────────────
 
 const TTL = 24 * 60 * 60 * 1000;
@@ -37,7 +39,10 @@ export default function Home({
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
   friends, onShareToFriend, addMoreSkills, removeSkill,
 }) {
-  const [activeSkill,     setActiveSkill]     = useState(skills[0] || "");
+  const [activeSkill,     setActiveSkill]     = useState(() => {
+    try { return localStorage.getItem(LS_SKILL_KEY) || (skills[0] || ""); }
+    catch { return skills[0] || ""; }
+  });
   const [ytBySkill,       setYtBySkill]       = useState({});
   const [loading,         setLoading]         = useState(false);
   const [activeIndex,     setActiveIndex]     = useState(0);
@@ -182,6 +187,10 @@ export default function Home({
   useEffect(() => {
     setActiveIndex(0);
     feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [activeSkill]);
+
+  useEffect(() => {
+    if (activeSkill) try { localStorage.setItem(LS_SKILL_KEY, activeSkill); } catch {}
   }, [activeSkill]);
 
   // ── IntersectionObserver ───────────────────────────────────────────────────
@@ -378,7 +387,7 @@ export default function Home({
                   <img src={item.thumbnail} className="tiktokSlideMedia" alt={item.title} />
                 )
               ) : item.mediaType?.startsWith("video") ? (
-                <video src={item.mediaUrl} className="tiktokSlideMedia" loop muted playsInline autoPlay />
+                <video src={item.mediaUrl} className="tiktokSlideMedia" loop muted playsInline autoPlay controls />
               ) : (
                 <img src={item.mediaUrl} className="tiktokSlideMedia" alt={item.caption} />
               )}

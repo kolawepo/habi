@@ -908,20 +908,23 @@ textarea {
   display: block;
 }
 
-/* YouTube iframe: extend height to push the "Watch on YouTube" bar below the
-   visible area. The slide has overflow:hidden so it's clipped invisibly. */
+/* Full height so the native control bar (incl. the seek/scrub line) stays
+   inside the visible, clipped area and is reachable for scrubbing. Previously
+   this was overflowed by 60px to hide YouTube's bottom bar, but that pushed
+   the scrub bar off-screen along with it. */
 .tiktokYtFrame {
-  height: calc(100% + 60px);
+  height: 100%;
 }
 
-/* Transparent strip at the bottom of each slide that always intercepts vertical
-   swipe gestures, even after the iframe has claimed touch handling. */
+/* Transparent strip at the very bottom edge of each slide that intercepts vertical
+   swipe gestures, even after the iframe has claimed touch handling. Kept short so
+   it doesn't sit over the YouTube player's native seek bar and block scrubbing. */
 .slideSwipeZone {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: 16px;
   z-index: 3;
   touch-action: pan-y;
   pointer-events: all;
@@ -5290,9 +5293,11 @@ textarea::placeholder {
 
 /* ── List view ── */
 .dmListPage {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   display: flex;
   flex-direction: column;
-  height: 100%;
   background: var(--bg, #f6f1ee);
 }
 

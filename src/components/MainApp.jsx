@@ -38,6 +38,7 @@ export default function MainApp({
   handleRemoveFriend,
   currentUser,
   myPosts,
+  myLikedPosts,
   handleDeletePost,
   likedVideos,
   setLikedVideos,
@@ -137,6 +138,7 @@ export default function MainApp({
             darkMode={darkMode}
             toggleDarkMode={toggleDarkMode}
             myPosts={myPosts}
+            myLikedPosts={myLikedPosts}
             handleDeletePost={handleDeletePost}
             profilePhotoUrl={profilePhotoUrl}
             setProfilePhotoUrl={setProfilePhotoUrl}

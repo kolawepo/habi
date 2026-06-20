@@ -33,6 +33,7 @@ export default function Profile({
   darkMode,
   toggleDarkMode,
   myPosts,
+  myLikedPosts,
   handleDeletePost,
   likedVideos,
   savedVideos,
@@ -326,7 +327,7 @@ async function changeUsername() {
   </div>
 
   <div>
-    <b>{myPosts.reduce((sum, p) => sum + (p.likedBy?.length || 0), 0)}</b>
+    <b>{myLikedPosts.length}</b>
     <span>Likes</span>
   </div>
 
@@ -410,25 +411,34 @@ async function changeUsername() {
       </div>
     ))}
 
+  {profileSection === "likes" && myLikedPosts.length === 0 && (
+    <div className="emptyVideoState">
+      Posts you like will appear here.
+    </div>
+  )}
+
   {profileSection === "likes" &&
-    likedVideos.map((video) => (
+    myLikedPosts.map((post) => (
       <div
         className="uploadItemCard"
-        key={video.videoId}
+        key={post.id}
       >
         <button
           className="uploadItem"
-          onClick={() =>
-            window.open(
-              `https://www.youtube.com/watch?v=${video.videoId}`,
-              "_blank"
-            )
-          }
+          onClick={() => {
+            setSelectedUpload(post);
+            setShowComments(false);
+            setShowActionBar(true);
+          }}
         >
-          <img
-            src={video.thumbnail}
-            alt={video.title}
-          />
+          {post.mediaType?.startsWith("video") ? (
+            <video src={post.mediaUrl} />
+          ) : (
+            <img
+              src={post.mediaUrl}
+              alt="upload"
+            />
+          )}
         </button>
       </div>
     ))}
@@ -538,8 +548,11 @@ async function changeUsername() {
 )}
       {selectedUpload && (() => {
         const uid = auth.currentUser?.uid;
-        const currentPost = myPosts.find(p => p.id === selectedUpload.id) || selectedUpload;
+        const currentPost = myPosts.find(p => p.id === selectedUpload.id)
+          || myLikedPosts.find(p => p.id === selectedUpload.id)
+          || selectedUpload;
         const isLiked = (currentPost.likedBy || []).includes(uid);
+        const isOwnPost = currentPost.userId === uid;
         return (
         <div className="uploadModal">
           <div className={showActionBar ? "socialViewer" : "socialViewer socialViewerExpanded"}>
@@ -614,12 +627,14 @@ async function changeUsername() {
                   {selectedUpload.caption}
                 </p>
 
-                <button
-                  className="postDeleteLink"
-                  onClick={() => handleDeletePost(selectedUpload)}
-                >
-                  Delete post
-                </button>
+                {isOwnPost && (
+                  <button
+                    className="postDeleteLink"
+                    onClick={() => handleDeletePost(selectedUpload)}
+                  >
+                    Delete post
+                  </button>
+                )}
               </div>
 
               {showComments && (

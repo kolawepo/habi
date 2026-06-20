@@ -367,8 +367,8 @@ export default function Friends({
         ) : (
           <div className="igFeed">
             {progressPosts.map((post) => {
-              const isLiked   = post.likes?.includes(currentUser?.uid) || likedPosts?.includes(post.id);
-              const likeCount = post.likes?.length ?? 0;
+              const isLiked   = post.likedBy?.includes(currentUser?.uid) || likedPosts?.includes(post.id);
+              const likeCount = post.likedBy?.length ?? 0;
               const poster    = friendProfiles.find((f) => f.uid === post.userId);
               const expanded  = expandedPostId === post.id;
 
