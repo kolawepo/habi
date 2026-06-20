@@ -113,75 +113,22 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  margin-top: -130px;
-  margin-bottom: -105px;
-  pointer-events: none;
 }
 
-.splashBibi {
-  width: 260px;
-  object-fit: contain;
-  z-index: 3;
-  flex-shrink: 0;
-  animation: floatBibi 3s ease-in-out infinite;
-  transform-origin: center;
+.bibiRunGame {
+  width: 100%;
+  max-width: 360px;
+  /* aspect-ratio wasn't resolving to a real height in this nested-flex
+     chain (confirmed via getBoundingClientRect: width:560 height:0) — using
+     an explicit height per breakpoint instead, same 800:300 ratio as the
+     Phaser game config so Scale.FIT letterboxes correctly. */
+  height: 135px;
 }
 
-@keyframes floatBibi {
-  0% {
-    transform: translateY(0px) rotate(-2deg);
-  }
-
-  50% {
-    transform: translateY(-14px) rotate(2deg);
-  }
-
-  100% {
-    transform: translateY(0px) rotate(-2deg);
-  }
-}
-
-.speechBubble {
-  position: relative;
-  width: 175px;
-  padding: 14px 15px;
-  margin-left: -80px;
-  margin-top: -220px;
-  background: linear-gradient(180deg, #fbfffff2, #ffffff);
-  border-radius: 34px 34px 34px 16px;
-  border: 2px solid rgb(234, 200, 6);
-  box-shadow: 0 20px 44px rgba(243, 235, 12, 0.14);
-  text-align: left;
-  z-index: 2;
-}
-
-.bubbleTail {
-  position: absolute;
-  left: -10px;
-  top: 52%;
-  width: 22px;
-  height: 22px;
-  background: #fffaf8;
-  transform: translateY(-50%) rotate(45deg);
-  border-left: 2px solid rgba(255, 153, 80, 0.2);
-  border-bottom: 2px solid rgba(255, 153, 80, 0.2);
-  border-radius: 6px;
-}
-
-.speechBubble h2 {
-  font-size: 22px;
-  line-height: 1;
-  margin-bottom: 6px;
-  color: #1f1f1f;
-  letter-spacing: -0.5px;
-}
-
-.speechBubble p {
-  font-size: 13px;
-  line-height: 1.2;
-  color: #666;
-  font-weight: 650;
+.bibiRunGame canvas {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 24px;
 }
 
 .splashActions {
@@ -201,25 +148,9 @@ textarea {
     font-size: 96px;
   }
 
-  .splashHero {
-    margin-top: -60px;
-    margin-bottom: -60px;
-  }
-
-  .splashBibi {
-    width: 420px;
-  }
-
-  .speechBubble {
-    width: 240px;
-    margin-left: -100px;
-    margin-top: -310px;
-    padding: 20px 22px;
-  }
-
-  .speechBubble h2 {
-    font-size: 28px;
-    margin-bottom: 8px;
+  .bibiRunGame {
+    max-width: 560px;
+    height: 210px;
   }
 
   .splashActions {

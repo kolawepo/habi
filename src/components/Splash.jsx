@@ -1,4 +1,4 @@
-import { BIBI } from "../data/appData";
+import BibiRunGame from "./BibiRunGame";
 export default function Splash({ onNext, onLogin }) {
   return (
     <section className="screen splash">
@@ -8,13 +8,7 @@ export default function Splash({ onNext, onLogin }) {
       </div>
 
       <div className="splashHero">
-        <img src={BIBI.happy} alt="Bibi" className="splashBibi" />
-
-        <div className="speechBubble">
-          <div className="bubbleTail" />
-          <h2>Hi! I’m Bibi</h2>
-          <p>Let’s build your next skill together.</p>
-        </div>
+        <BibiRunGame />
       </div>
 
       <div className="splashActions">
