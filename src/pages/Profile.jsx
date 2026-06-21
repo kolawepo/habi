@@ -110,7 +110,7 @@ export default function Profile({
   const [showComments, setShowComments] = useState(false);
   const [showActionBar, setShowActionBar] = useState(true);
 
-  const [profileSection, setProfileSection] = useState("uploads");
+  const [profileSection, setProfileSection] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
 const [newUsername, setNewUsername] = useState("");
 const [changingUsername, setChangingUsername] = useState(false);
@@ -319,37 +319,7 @@ async function changeUsername() {
           </div>
         )}
 
-        <div className="profileStats">
-
-  <div>
-    <b>{myPosts.length}</b>
-    <span>Posts</span>
-  </div>
-
-  <div>
-    <b>{myLikedPosts.length}</b>
-    <span>Likes</span>
-  </div>
-
-  <div>
-    <b>{savedVideos.length}</b>
-    <span>Saved</span>
-  </div>
-
-</div>
-
         <div className="profileSections">
-
-  <button
-    className={
-      profileSection === "uploads"
-        ? "activeProfileSection"
-        : ""
-    }
-    onClick={() => setProfileSection("uploads")}
-  >
-    Posts
-  </button>
 
   <button
     className={
@@ -357,7 +327,7 @@ async function changeUsername() {
         ? "activeProfileSection"
         : ""
     }
-    onClick={() => setProfileSection("likes")}
+    onClick={() => setProfileSection(s => s === "likes" ? null : "likes")}
   >
     Likes
   </button>
@@ -368,7 +338,7 @@ async function changeUsername() {
         ? "activeProfileSection"
         : ""
     }
-    onClick={() => setProfileSection("saved")}
+    onClick={() => setProfileSection(s => s === "saved" ? null : "saved")}
   >
     Saved
   </button>
@@ -379,7 +349,7 @@ async function changeUsername() {
         ? "activeProfileSection"
         : ""
     }
-    onClick={() => setProfileSection("likedVideos")}
+    onClick={() => setProfileSection(s => s === "likedVideos" ? null : "likedVideos")}
   >
     Liked Videos
   </button>
@@ -388,7 +358,7 @@ async function changeUsername() {
       </div>
 
       <div className="card uploadsCard">
-        {myPosts.length === 0 && (
+        {profileSection === null && myPosts.length === 0 && (
           <div className="emptyVideoState">
             Your uploaded progress will appear here.
           </div>
@@ -396,7 +366,7 @@ async function changeUsername() {
 
         <div className="uploadGrid">
 
-  {profileSection === "uploads" &&
+  {profileSection === null &&
     myPosts.map((post) => (
       <div
         className="uploadItemCard"
