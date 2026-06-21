@@ -116,13 +116,15 @@ textarea {
 }
 
 .bibiRunGame {
-  width: 100%;
-  max-width: 360px;
   /* aspect-ratio wasn't resolving to a real height in this nested-flex
      chain (confirmed via getBoundingClientRect: width:560 height:0) — using
-     an explicit height per breakpoint instead, same 800:300 ratio as the
-     Phaser game config so Scale.FIT letterboxes correctly. */
-  height: 135px;
+     an explicit height instead, same 800:300 ratio as the Phaser game
+     config so Scale.FIT letterboxes correctly. Scaled off vw (not a fixed
+     px cap) so it actually fills more of small phone screens; both width
+     and height scale by the same vw factor so the ratio holds right up to
+     the 480px/180px cap. */
+  width: min(92vw, 480px);
+  height: min(34.5vw, 180px);
 }
 
 .bibiRunGame canvas {
