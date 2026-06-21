@@ -60,6 +60,7 @@ export default function Home({
   const memCache         = useRef({});
   const feedRef          = useRef([]);
   const soundUnlocked    = useRef(false);
+  const randomizedFor    = useRef(null);
 
   const activeIdxRef = useRef(0); activeIdxRef.current = activeIndex;
   const mutedRef     = useRef(muted); mutedRef.current   = muted;
@@ -182,14 +183,21 @@ export default function Home({
   ];
   feedRef.current = feed;
 
-  // ── Reset on skill change ──────────────────────────────────────────────────
+  // ── Randomize start index on skill change ─────────────────────────────────
+  // Runs once per (re)entry into a skill, but only once its feed actually has
+  // data — on a fresh mount (leaving Home via another tab, or the app getting
+  // backgrounded/reloaded) the feed is briefly empty on the very first render,
+  // so this waits for that load instead of locking in index 0 right away.
 
   useEffect(() => {
+    if (randomizedFor.current === activeSkill) return;
     const len = feedRef.current.length;
+    if (len === 0) return;
+    randomizedFor.current = activeSkill;
     const idx = len > 1 ? Math.floor(Math.random() * len) : 0;
     setActiveIndex(idx);
     feedEl.current?.scrollTo({ top: idx * (feedEl.current.clientHeight || 0), behavior: "instant" });
-  }, [activeSkill]);
+  }, [activeSkill, ytBySkill[activeSkill]]); // eslint-disable-line
 
   useEffect(() => {
     if (activeSkill) try { localStorage.setItem(LS_SKILL_KEY, activeSkill); } catch {}

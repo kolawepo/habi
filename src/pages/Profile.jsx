@@ -373,6 +373,17 @@ async function changeUsername() {
     Saved
   </button>
 
+  <button
+    className={
+      profileSection === "likedVideos"
+        ? "activeProfileSection"
+        : ""
+    }
+    onClick={() => setProfileSection("likedVideos")}
+  >
+    Liked Videos
+  </button>
+
 </div>
       </div>
 
@@ -445,6 +456,35 @@ async function changeUsername() {
 
   {profileSection === "saved" &&
     savedVideos.map((video) => (
+      <div
+        className="uploadItemCard"
+        key={video.videoId}
+      >
+        <button
+          className="uploadItem"
+          onClick={() =>
+            window.open(
+              `https://www.youtube.com/watch?v=${video.videoId}`,
+              "_blank"
+            )
+          }
+        >
+          <img
+            src={video.thumbnail}
+            alt={video.title}
+          />
+        </button>
+      </div>
+    ))}
+
+  {profileSection === "likedVideos" && likedVideos.length === 0 && (
+    <div className="emptyVideoState">
+      Videos you like will appear here.
+    </div>
+  )}
+
+  {profileSection === "likedVideos" &&
+    likedVideos.map((video) => (
       <div
         className="uploadItemCard"
         key={video.videoId}
