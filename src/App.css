@@ -120,11 +120,16 @@ textarea {
      chain (confirmed via getBoundingClientRect: width:560 height:0) — using
      an explicit height instead, same 800:300 ratio as the Phaser game
      config so Scale.FIT letterboxes correctly. Scaled off vw (not a fixed
-     px cap) so it actually fills more of small phone screens; both width
-     and height scale by the same vw factor so the ratio holds right up to
-     the 480px/180px cap. */
-  width: min(92vw, 480px);
-  height: min(34.5vw, 180px);
+     px cap) so it fills more of small phone screens; both width and height
+     scale by the same vw factor so the ratio holds right up to the
+     480px/180px cap (which a flex-shrink default would otherwise undercut —
+     .splash's 36px of side padding made the flex item shrink below its own
+     vw value, so flex-shrink is killed and negative margins cancel that
+     padding out for this element specifically). */
+  width: min(98vw, 480px);
+  height: min(36.75vw, 180px);
+  flex-shrink: 0;
+  margin: 0 -18px;
 }
 
 .bibiRunGame canvas {
@@ -151,8 +156,9 @@ textarea {
   }
 
   .bibiRunGame {
-    max-width: 560px;
+    width: 560px;
     height: 210px;
+    margin: 0;
   }
 
   .splashActions {
