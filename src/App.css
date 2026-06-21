@@ -914,6 +914,14 @@ textarea {
   object-fit: cover;
   border: none;
   display: block;
+  /* .tiktokFeed declares touch-action:pan-y, and touch-action is computed as
+     the intersection of an element's value with every ancestor's — without
+     this override, that pan-y leaks onto the iframe/<video> itself and the
+     browser only ever recognizes vertical panning as a default gesture here,
+     never the horizontal drag scrubbing needs. auto lets the media surface
+     (YouTube's own player, or the native video's scrub bar) claim that drag;
+     .slideSwipeZone's own pan-y still handles swipe-between-slides. */
+  touch-action: auto;
 }
 
 /* Full height so the native control bar (incl. the seek/scrub line) stays
