@@ -35,9 +35,9 @@ function saveCache(skill, videos) {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function Home({
-  firstName, skills, allPosts,
+  firstName, currentUser, skills, allPosts,
   likedVideos, setLikedVideos, savedVideos, setSavedVideos,
-  friends, onShareToFriend, addMoreSkills, removeSkill,
+  friends, onShareToFriend, addMoreSkills, removeSkill, handleLikePost,
 }) {
   const [activeSkill,     setActiveSkill]     = useState(() => {
     try { return localStorage.getItem(LS_SKILL_KEY) || (skills[0] || ""); }
@@ -185,8 +185,10 @@ export default function Home({
   // ── Reset on skill change ──────────────────────────────────────────────────
 
   useEffect(() => {
-    setActiveIndex(0);
-    feedEl.current?.scrollTo({ top: 0, behavior: "instant" });
+    const len = feedRef.current.length;
+    const idx = len > 1 ? Math.floor(Math.random() * len) : 0;
+    setActiveIndex(idx);
+    feedEl.current?.scrollTo({ top: idx * (feedEl.current.clientHeight || 0), behavior: "instant" });
   }, [activeSkill]);
 
   useEffect(() => {
@@ -294,10 +296,14 @@ export default function Home({
 
   // ── Like / save ────────────────────────────────────────────────────────────
 
-  const isLiked = v => likedVideos.some(x => x.videoId === v.videoId);
+  const isLiked = v =>
+    v._type === "post"
+      ? (v.likedBy || []).includes(currentUser?.uid)
+      : likedVideos.some(x => x.videoId === v.videoId);
   const isSaved = v => savedVideos.some(x => x.videoId === v.videoId);
 
   function toggleLike(v) {
+    if (v._type === "post") { handleLikePost?.(v); return; }
     isLiked(v)
       ? setLikedVideos(p => p.filter(x => x.videoId !== v.videoId))
       : setLikedVideos(p => [...p, { videoId: v.videoId, title: v.title, creator: v.creator, thumbnail: v.thumbnail, skill: v.skill }]);

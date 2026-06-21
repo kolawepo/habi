@@ -82,6 +82,7 @@ export default function MainApp({
   onShareToFriend={onShareToFriend}
   addMoreSkills={addMoreSkills}
   removeSkill={removeSkill}
+  handleLikePost={handleLikePost}
 />
         )}
 
